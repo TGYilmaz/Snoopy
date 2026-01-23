@@ -219,7 +219,7 @@ export function OrderHistory() {
                         {item.quantity}x {item.productName}
                         {item.isMenu && <Badge variant="outline" className="ml-1 text-[10px]">Menu</Badge>}
                       </span>
-                      <span className="text-card-foreground">${item.totalPrice.toFixed(2)}</span>
+                      <span className="text-card-foreground">₺{item.totalPrice.toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -278,7 +278,8 @@ export function OrderHistory() {
                     {item.productName}
                     {item.isMenu && <Badge variant="outline" className="ml-1 text-[10px]">Menu</Badge>}
                   </div>
-                  <div className="text-sm text-muted-foreground">${item.unitPrice.toFixed(2)} adet fiyatı</div>
+                  <div className="text-sm text-muted-foreground">₺
+                    {item.unitPrice.toFixed(2)} adet fiyatı</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -299,7 +300,7 @@ export function OrderHistory() {
                     <Plus className="w-3 h-3" />
                   </Button>
                 </div>
-                <div className="w-20 text-right font-medium">${item.totalPrice.toFixed(2)}</div>
+                <div className="w-20 text-right font-medium">₺{item.totalPrice.toFixed(2)}</div>
               </div>
             ))}
             {editItems.length === 0 && (

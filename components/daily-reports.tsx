@@ -215,7 +215,7 @@ export function DailyReports() {
                 <span className="text-sm">Toplam Ciro</span>
               </div>
               <div className="text-3xl font-bold text-foreground">
-                ${stats.totalRevenue.toFixed(2)}
+                ₺{stats.totalRevenue.toFixed(2)}
               </div>
             </Card>
 

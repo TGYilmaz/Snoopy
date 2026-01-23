@@ -15,10 +15,10 @@ const VALID_USERNAME = 'snoopy_guzelyurt'
 const VALID_PASSWORD = '**snoopyguzelyurt'
 
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'burger', name: 'Burger', color: 'bg-orange-500' },
-  { id: 'side', name: 'Side', color: 'bg-yellow-500' },
-  { id: 'drink', name: 'Drink', color: 'bg-blue-500' },
-  { id: 'dessert', name: 'Dessert', color: 'bg-pink-500' },
+  { id: 'burger', name: 'Sandviç', color: 'bg-orange-500' },
+  { id: 'side', name: 'Atıştırmalıklar', color: 'bg-yellow-500' },
+  { id: 'drink', name: 'İçecekler', color: 'bg-blue-500' },
+  { id: 'dessert', name: 'Tatlılar', color: 'bg-pink-500' },
 ]
 
 // Products
@@ -55,6 +55,11 @@ export function saveOrder(order: Order): void {
   const orders = getOrders()
   orders.unshift(order)
   localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
+const today = new Date().toISOString().split('T')[0]
+  const report = getDailyReports().find(r => r.date === today) || { date: today, total: 0, orders: [] }
+  report.orders.push(order)
+  report.total += order.total
+  saveDailyReport(report)
 }
 
 export function updateOrder(order: Order): void {
@@ -99,7 +104,7 @@ export function getTodayReport(): DailyReport | null {
 }
 
 export function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+   return crypto.randomUUID(); // Modern tarayıcılarda UUID
 }
 
 // Menus

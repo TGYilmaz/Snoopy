@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { DollarSign, TurkishLira, CreditCard, Banknote, Calendar, TrendingUp, ShoppingBag, Award } from 'lucide-react'
+import { DollarSign, CreditCard, Banknote, Calendar, TrendingUp, ShoppingBag, Award } from 'lucide-react'
 import { Order } from '@/lib/pos-types'
 import { getOrders } from '@/lib/pos-store'
 

@@ -339,23 +339,23 @@ export function ProductManagement() {
     <div className="h-full flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Products & Menus</h1>
-          <p className="text-muted-foreground">Manage your menu items and combos</p>
+          <h1 className="text-2xl font-bold text-foreground">Ürünler & Menüler</h1>
+          <p className="text-muted-foreground">Ürünlerinizi ve menülerinizi yönetin</p>
         </div>
       </div>
 
       <Tabs defaultValue="products" className="flex-1 flex flex-col">
         <TabsList className="w-fit">
-          <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="menus">Menus</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="products">Ürünler</TabsTrigger>
+          <TabsTrigger value="menus">Menüler</TabsTrigger>
+          <TabsTrigger value="categories">Kategoriler</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products" className="flex-1 flex flex-col gap-4 mt-4">
           <div className="flex justify-end">
             <Button onClick={openNewDialog} size="lg" className="h-12">
               <Plus className="w-5 h-5 mr-2" />
-              Add Product
+              Ürün Ekle
             </Button>
           </div>
 
@@ -402,7 +402,7 @@ export function ProductManagement() {
                                   {category.name}
                                 </Badge>
                               </div>
-                              <div className="text-xl font-semibold text-primary">${product.price.toFixed(2)}</div>
+                              <div className="text-xl font-semibold text-primary">₺{product.price.toFixed(2)}</div>
                             </div>
                             <div className="flex items-center gap-2">
                               <Switch checked={product.active} onCheckedChange={() => toggleActive(product)} />
@@ -422,10 +422,10 @@ export function ProductManagement() {
               })}
               {products.length === 0 && (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">No products yet</p>
+                  <p className="text-muted-foreground mb-4">Henüz ürün yok</p>
                   <Button onClick={openNewDialog}>
                     <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Product
+                    İlk Ürününüzü Ekleyin
                   </Button>
                 </div>
               )}
@@ -437,7 +437,7 @@ export function ProductManagement() {
           <div className="flex justify-end">
             <Button onClick={openNewMenuDialog} size="lg" className="h-12">
               <Plus className="w-5 h-5 mr-2" />
-              Create Menu
+              Menü Oluştur
             </Button>
           </div>
 
@@ -467,9 +467,9 @@ export function ProductManagement() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-medium text-card-foreground truncate">{menu.name}</h3>
-                          <Badge variant="secondary">{totalItems} items</Badge>
+                          <Badge variant="secondary">{totalItems} ürün</Badge>
                         </div>
-                        <div className="text-xl font-semibold text-primary mb-2">${menu.price.toFixed(2)}</div>
+                        <div className="text-xl font-semibold text-primary mb-2">₺{menu.price.toFixed(2)}</div>
                         <div className="flex flex-wrap gap-1">
                           {menuItems.slice(0, 3).map((item) => {
                             const p = getProductById(item.productId)
@@ -481,7 +481,7 @@ export function ProductManagement() {
                           })}
                           {menuItems.length > 3 && (
                             <Badge variant="outline" className="text-xs">
-                              +{menuItems.length - 3} more
+                              +{menuItems.length - 3} daha fazla
                             </Badge>
                           )}
                         </div>
@@ -501,10 +501,10 @@ export function ProductManagement() {
               })}
               {menus.length === 0 && (
                 <div className="col-span-2 text-center py-12">
-                  <p className="text-muted-foreground mb-4">No menus yet</p>
+                  <p className="text-muted-foreground mb-4">Henüz menü yok</p>
                   <Button onClick={openNewMenuDialog}>
                     <Plus className="w-4 h-4 mr-2" />
-                    Create Your First Menu
+                    İlk Menünüzü Oluşturun
                   </Button>
                 </div>
               )}
@@ -516,7 +516,7 @@ export function ProductManagement() {
           <div className="flex justify-end">
             <Button onClick={openNewCategoryDialog} size="lg" className="h-12">
               <Plus className="w-5 h-5 mr-2" />
-              Add Category
+              Kategori Ekleyin
             </Button>
           </div>
 
@@ -532,7 +532,7 @@ export function ProductManagement() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-card-foreground truncate">{category.name}</h3>
-                        <p className="text-sm text-muted-foreground">{productCount} products</p>
+                        <p className="text-sm text-muted-foreground">{productCount} ürün</p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEditCategoryDialog(category)}>
@@ -569,7 +569,7 @@ export function ProductManagement() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+            <DialogTitle>{editingProduct ? 'Ürünü Düzenle' : 'Yeni Ürün Ekle'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex flex-col items-center gap-4">
@@ -593,14 +593,14 @@ export function ProductManagement() {
               <div>
                 <Label htmlFor="product-image" className="cursor-pointer">
                   <Button variant="outline" asChild>
-                    <span>Upload Image</span>
+                    <span>Görsel Yükle</span>
                   </Button>
                 </Label>
                 <Input id="product-image" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Ürün Adı</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -609,7 +609,7 @@ export function ProductManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="price">Price</Label>
+              <Label htmlFor="price">Fiyat</Label>
               <Input
                 id="price"
                 type="number"
@@ -621,7 +621,7 @@ export function ProductManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">Kategori</Label>
               <Select
                 value={formData.categoryId}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, categoryId: value }))}
@@ -642,7 +642,7 @@ export function ProductManagement() {
               </Select>
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="active">Active</Label>
+              <Label htmlFor="active">Aktif</Label>
               <Switch
                 id="active"
                 checked={formData.active}
@@ -652,9 +652,9 @@ export function ProductManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
+              İptal
             </Button>
-            <Button onClick={handleSave}>{editingProduct ? 'Save Changes' : 'Add Product'}</Button>
+            <Button onClick={handleSave}>{editingProduct ? 'Değişiklikleri Kaydet' : 'Ürün Ekle'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -663,7 +663,7 @@ export function ProductManagement() {
       <Dialog open={menuDialogOpen} onOpenChange={setMenuDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingMenu ? 'Edit Menu' : 'Create New Menu'}</DialogTitle>
+            <DialogTitle>{editingMenu ? 'Menüyü Düzenle' : 'Yeni Menü Oluştur'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex gap-6">
@@ -688,7 +688,7 @@ export function ProductManagement() {
                 <div>
                   <Label htmlFor="menu-image" className="cursor-pointer">
                     <Button variant="outline" asChild>
-                      <span>Upload Image</span>
+                      <span>Görsel Yükle</span>
                     </Button>
                   </Label>
                   <Input
@@ -702,7 +702,7 @@ export function ProductManagement() {
               </div>
               <div className="flex-1 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="menu-name">Menu Name</Label>
+                  <Label htmlFor="menu-name">Menü Adı</Label>
                   <Input
                     id="menu-name"
                     value={menuFormData.name}
@@ -711,7 +711,7 @@ export function ProductManagement() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="menu-price">Menu Price</Label>
+                  <Label htmlFor="menu-price">Menu Fiyatı</Label>
                   <Input
                     id="menu-price"
                     type="number"
@@ -723,7 +723,7 @@ export function ProductManagement() {
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="menu-active">Active</Label>
+                  <Label htmlFor="menu-active">Aktif</Label>
                   <Switch
                     id="menu-active"
                     checked={menuFormData.active}
@@ -734,7 +734,7 @@ export function ProductManagement() {
             </div>
 
             <div className="space-y-2">
-              <Label>Select Products ({getTotalMenuItems()} selected)</Label>
+              <Label>Ürünleri Seç ({getTotalMenuItems()} selected)</Label>
               <ScrollArea className="h-56 border rounded-lg p-3">
                 <div className="space-y-2">
                   {products.map((product) => {
@@ -762,7 +762,7 @@ export function ProductManagement() {
                         </div>
                         <div className="flex-1">
                           <div className="font-medium text-sm">{product.name}</div>
-                          <div className="text-xs text-muted-foreground">${product.price.toFixed(2)}</div>
+                          <div className="text-xs text-muted-foreground">₺{product.price.toFixed(2)}</div>
                         </div>
                         {category && (
                           <Badge className={`${category.color} text-white`} variant="secondary">
@@ -794,7 +794,7 @@ export function ProductManagement() {
                   })}
                   {products.length === 0 && (
                     <div className="text-center py-4 text-muted-foreground">
-                      No products available. Add products first.
+                      Ürün bulunamadı. Önce ürün ekleyin.
                     </div>
                   )}
                 </div>
@@ -819,10 +819,10 @@ export function ProductManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMenuDialogOpen(false)}>
-              Cancel
+              İptal
             </Button>
             <Button onClick={handleMenuSave} disabled={menuFormData.items.length === 0}>
-              {editingMenu ? 'Save Changes' : 'Create Menu'}
+              {editingMenu ? 'Değişiklikleri Kaydet' : 'Yeni Menü Ekle'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -832,11 +832,11 @@ export function ProductManagement() {
       <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingCategory ? 'Edit Category' : 'Add New Category'}</DialogTitle>
+            <DialogTitle>{editingCategory ? 'Kategoriyi Düzenle' : 'Yeni Kategori Ekle'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="category-name">Name</Label>
+              <Label htmlFor="category-name">Kategori Adı</Label>
               <Input
                 id="category-name"
                 value={categoryFormData.name}
@@ -845,7 +845,7 @@ export function ProductManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Color</Label>
+              <Label>Renk</Label>
               <div className="grid grid-cols-4 gap-2">
                 {CATEGORY_COLORS.map((color) => (
                   <button
@@ -864,9 +864,9 @@ export function ProductManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCategoryDialogOpen(false)}>
-              Cancel
+              İptal
             </Button>
-            <Button onClick={handleCategorySave}>{editingCategory ? 'Save Changes' : 'Add Category'}</Button>
+            <Button onClick={handleCategorySave}>{editingCategory ? 'Değişiklikleri Kaydet' : 'Kategori Ekle'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -875,9 +875,9 @@ export function ProductManagement() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+            <AlertDialogTitle>Ürünü Sil</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{productToDelete?.name}&quot;? This action cannot be undone.
+              &quot;{productToDelete?.name}&quot; adlı ürünü silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

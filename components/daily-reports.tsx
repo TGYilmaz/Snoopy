@@ -211,7 +211,7 @@ export function DailyReports() {
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                <TurkishLira className="w-5 h-5" />
+                <DollarSign className="w-5 h-5" />
                 <span className="text-sm">Toplam Ciro</span>
               </div>
               <div className="text-3xl font-bold text-foreground">

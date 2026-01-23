@@ -76,7 +76,7 @@ export function DailyReports() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString + 'T00:00:00')
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('tr-TR', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -90,14 +90,14 @@ export function DailyReports() {
     }
     const start = new Date(startDate + 'T00:00:00')
     const end = new Date(endDate + 'T00:00:00')
-    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+    return `${start.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric', year: 'numeric' })}`
   }
 
   return (
     <div className="h-full flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Reports</h1>
+          <h1 className="text-2xl font-bold text-foreground">Raporlar</h1>
           <p className="text-muted-foreground">{getDateRangeLabel()}</p>
         </div>
       </div>
@@ -106,15 +106,15 @@ export function DailyReports() {
       <Card className="p-4">
         <Tabs value={dateMode} onValueChange={(v) => setDateMode(v as 'single' | 'range')}>
           <TabsList className="mb-4">
-            <TabsTrigger value="single">Single Date</TabsTrigger>
-            <TabsTrigger value="range">Date Range</TabsTrigger>
+            <TabsTrigger value="single">Tek Tarih</TabsTrigger>
+            <TabsTrigger value="range">Tarih Aralığı</TabsTrigger>
           </TabsList>
 
           <TabsContent value="single" className="mt-0">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
-                <Label htmlFor="single-date" className="sr-only">Date</Label>
+                <Label htmlFor="single-date" className="sr-only">Tarih</Label>
                 <Input
                   id="single-date"
                   type="date"
@@ -130,7 +130,7 @@ export function DailyReports() {
                   onClick={() => setSingleDate(new Date().toISOString().split('T')[0])}
                   className="bg-transparent"
                 >
-                  Today
+                  Bugün
                 </Button>
                 <Button
                   variant="outline"
@@ -142,7 +142,7 @@ export function DailyReports() {
                   }}
                   className="bg-transparent"
                 >
-                  Yesterday
+                  Dün
                 </Button>
               </div>
             </div>
@@ -151,7 +151,7 @@ export function DailyReports() {
           <TabsContent value="range" className="mt-0">
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
-                <Label htmlFor="start-date" className="text-sm text-muted-foreground">From</Label>
+                <Label htmlFor="start-date" className="text-sm text-muted-foreground">Başlangıç</Label>
                 <Input
                   id="start-date"
                   type="date"
@@ -161,7 +161,7 @@ export function DailyReports() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Label htmlFor="end-date" className="text-sm text-muted-foreground">To</Label>
+                <Label htmlFor="end-date" className="text-sm text-muted-foreground">Bitiş</Label>
                 <Input
                   id="end-date"
                   type="date"
@@ -183,7 +183,7 @@ export function DailyReports() {
                   }}
                   className="bg-transparent"
                 >
-                  Last 7 Days
+                  Son 7 Gün
                 </Button>
                 <Button
                   variant="outline"
@@ -197,7 +197,7 @@ export function DailyReports() {
                   }}
                   className="bg-transparent"
                 >
-                  Last 30 Days
+                  Son 30 Gün
                 </Button>
               </div>
             </div>
@@ -212,7 +212,7 @@ export function DailyReports() {
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <DollarSign className="w-5 h-5" />
-                <span className="text-sm">Total Revenue</span>
+                <span className="text-sm">Toplam Ciro</span>
               </div>
               <div className="text-3xl font-bold text-foreground">
                 ${stats.totalRevenue.toFixed(2)}
@@ -222,7 +222,7 @@ export function DailyReports() {
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <ShoppingBag className="w-5 h-5" />
-                <span className="text-sm">Total Orders</span>
+                <span className="text-sm">Toplam Sipariş</span>
               </div>
               <div className="text-3xl font-bold text-foreground">
                 {stats.totalOrders}
@@ -237,7 +237,7 @@ export function DailyReports() {
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <Banknote className="w-5 h-5 text-green-600" />
-                <span className="text-sm">Cash Revenue</span>
+                <span className="text-sm">Nakit Ciro</span>
               </div>
               <div className="text-2xl font-bold text-foreground">
                 ${stats.cashRevenue.toFixed(2)}
@@ -247,7 +247,7 @@ export function DailyReports() {
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <CreditCard className="w-5 h-5 text-blue-600" />
-                <span className="text-sm">Card Revenue</span>
+                <span className="text-sm">Kredi Kart Cirosu</span>
               </div>
               <div className="text-2xl font-bold text-foreground">
                 ${stats.cardRevenue.toFixed(2)}
@@ -257,7 +257,7 @@ export function DailyReports() {
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <TrendingUp className="w-5 h-5" />
-                <span className="text-sm">Average Order</span>
+                <span className="text-sm">Ortalama Sipariş</span>
               </div>
               <div className="text-2xl font-bold text-foreground">
                 ${stats.averageOrder.toFixed(2)}
@@ -267,7 +267,7 @@ export function DailyReports() {
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <Award className="w-5 h-5 text-amber-500" />
-                <span className="text-sm">Best Seller</span>
+                <span className="text-sm">En Çok Satan</span>
               </div>
               {stats.bestSeller ? (
                 <div>
@@ -279,7 +279,7 @@ export function DailyReports() {
                   </div>
                 </div>
               ) : (
-                <div className="text-muted-foreground">No sales</div>
+                <div className="text-muted-foreground">Satış Yok</div>
               )}
             </Card>
           </div>
@@ -310,7 +310,7 @@ export function DailyReports() {
           {filteredOrders.length === 0 && (
             <Card className="p-8 text-center">
               <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No orders for the selected period</p>
+              <p className="text-muted-foreground">Seçilen dönemde sipariş yok</p>
             </Card>
           )}
         </div>

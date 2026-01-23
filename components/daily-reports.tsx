@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { DollarSign, CreditCard, Banknote, Calendar, TrendingUp, ShoppingBag, Award } from 'lucide-react'
+import { DollarSign, TurkishLira, CreditCard, Banknote, Calendar, TrendingUp, ShoppingBag, Award } from 'lucide-react'
 import { Order } from '@/lib/pos-types'
 import { getOrders } from '@/lib/pos-store'
 
@@ -211,7 +211,7 @@ export function DailyReports() {
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                <DollarSign className="w-5 h-5" />
+                <TurkishLira className="w-5 h-5" />
                 <span className="text-sm">Toplam Ciro</span>
               </div>
               <div className="text-3xl font-bold text-foreground">
@@ -260,7 +260,7 @@ export function DailyReports() {
                 <span className="text-sm">Ortalama Sipariş</span>
               </div>
               <div className="text-2xl font-bold text-foreground">
-                ${stats.averageOrder.toFixed(2)}
+                ₺{stats.averageOrder.toFixed(2)}
               </div>
             </Card>
 

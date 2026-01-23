@@ -8,8 +8,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Burger POS - Point of Sale',
-  description: 'Restaurant point of sale system for hamburger shop',
+  title: 'Snoopy POS',
+  description: 'İşletmeler için akıllı POS sistemi',
   generator: 'v0.app',
   icons: {
     icon: [

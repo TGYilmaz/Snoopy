@@ -61,6 +61,11 @@ export function POSSidebar() {
     setDialogOpen(false)
   }
 
+const logout = () => {
+    localStorage.removeItem('isLoggedIn')
+    window.location.href = '/login'
+  }
+  
   return (
     <>
       <aside className="w-20 bg-card border-r border-border flex flex-col items-center py-6 gap-2">
@@ -108,6 +113,17 @@ export function POSSidebar() {
             </Link>
           )
         })}
+
+<button
+    onClick={logout}
+    className="mt-auto mb-2 w-14 h-14 rounded-xl
+               flex flex-col items-center justify-center
+               text-muted-foreground hover:bg-destructive
+               hover:text-destructive-foreground transition-colors"
+    title="Çıkış Yap"
+  >
+    <span className="text-[10px] font-medium">Çıkış</span>
+  </button>
       </aside>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

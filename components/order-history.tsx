@@ -150,7 +150,7 @@ export function OrderHistory() {
             <div className="text-center py-12">
               <Receipt className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                {searchDate ? 'No orders found for this date' : 'Henüz Sipariş Yok'}
+                {searchDate ? 'Bu tarih için sipariş bulunamadı' : 'Henüz Sipariş Yok'}
               </p>
             </div>
           ) : (

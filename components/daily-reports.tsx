@@ -240,7 +240,7 @@ export function DailyReports() {
                 <span className="text-sm">Nakit Ciro</span>
               </div>
               <div className="text-2xl font-bold text-foreground">
-                ${stats.cashRevenue.toFixed(2)}
+                ₺{stats.cashRevenue.toFixed(2)}
               </div>
             </Card>
 

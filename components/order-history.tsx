@@ -58,7 +58,7 @@ export function OrderHistory() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('tr-TR', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -125,8 +125,8 @@ export function OrderHistory() {
     <div className="h-full flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Order History</h1>
-          <p className="text-muted-foreground">View and manage past orders</p>
+          <h1 className="text-2xl font-bold text-foreground">Sipariş Geçmişi</h1>
+          <p className="text-muted-foreground">Geçmiş Siparişleri Görüntüle</p>
         </div>
         <div className="flex items-center gap-2">
           <Search className="w-4 h-4 text-muted-foreground" />
@@ -138,7 +138,7 @@ export function OrderHistory() {
           />
           {searchDate && (
             <Button variant="ghost" size="sm" onClick={() => setSearchDate('')}>
-              Clear
+              Temizle
             </Button>
           )}
         </div>
@@ -150,7 +150,7 @@ export function OrderHistory() {
             <div className="text-center py-12">
               <Receipt className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                {searchDate ? 'No orders found for this date' : 'No orders yet'}
+                {searchDate ? 'No orders found for this date' : 'Henüz Sipariş Yok'}
               </p>
             </div>
           ) : (
@@ -160,10 +160,10 @@ export function OrderHistory() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-card-foreground">
-                        Order #{order.id.slice(-6).toUpperCase()}
+                        Sipariş #{order.id.slice(-6).toUpperCase()}
                       </span>
                       <Badge
-                        variant={order.status === 'completed' ? 'default' : 'destructive'}
+                        variant={order.status === 'tamamlandı' ? 'default' : 'İptal Edildi'}
                       >
                         {order.status}
                       </Badge>
@@ -180,7 +180,7 @@ export function OrderHistory() {
                         <CreditCard className="w-5 h-5 text-blue-600" />
                       )}
                       <span className="text-lg font-semibold text-card-foreground">
-                        ${order.total.toFixed(2)}
+                        ₺{order.total.toFixed(2)}
                       </span>
                     </div>
                     <DropdownMenu>
@@ -192,12 +192,12 @@ export function OrderHistory() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => openEditDialog(order)}>
                           <Pencil className="w-4 h-4 mr-2" />
-                          Edit Order
+                          Siparişi Düzenle
                         </DropdownMenuItem>
                         {order.status === 'completed' && (
                           <DropdownMenuItem onClick={() => setOrderToCancel(order)}>
                             <XCircle className="w-4 h-4 mr-2" />
-                            Cancel Order
+                            Siparişi İptal Et
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
@@ -205,7 +205,7 @@ export function OrderHistory() {
                           className="text-destructive focus:text-destructive"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Delete Order
+                          Siparişi Sil
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -233,15 +233,15 @@ export function OrderHistory() {
       <AlertDialog open={!!orderToDelete} onOpenChange={() => setOrderToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Order?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete order #{orderToDelete?.id.slice(-6).toUpperCase()}. This action cannot be undone.
-            </AlertDialogDescription>
+           <AlertDialogTitle>Sipariş Silinsin mi?</AlertDialogTitle>
+<AlertDialogDescription>
+  #{orderToDelete?.id.slice(-6).toUpperCase()} numaralı sipariş kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteOrder} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              Sil
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -251,14 +251,14 @@ export function OrderHistory() {
       <AlertDialog open={!!orderToCancel} onOpenChange={() => setOrderToCancel(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Order?</AlertDialogTitle>
+            <AlertDialogTitle>Sipariş İptal Edilsin Mi?</AlertDialogTitle>
             <AlertDialogDescription>
               This will mark order #{orderToCancel?.id.slice(-6).toUpperCase()} as cancelled. The order will remain in history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Go Back</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancelOrder}>Cancel Order</AlertDialogAction>
+            <AlertDialogCancel>Geri Dön</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelOrder}>Siparişi İptal Et</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -267,8 +267,8 @@ export function OrderHistory() {
       <Dialog open={!!orderToEdit} onOpenChange={() => setOrderToEdit(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Order #{orderToEdit?.id.slice(-6).toUpperCase()}</DialogTitle>
-            <DialogDescription>Modify order items and quantities</DialogDescription>
+            <DialogTitle>Siparişi Düzenle #{orderToEdit?.id.slice(-6).toUpperCase()}</DialogTitle>
+            <DialogDescription>Ürünleri ve adetleri düzenleyin</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 max-h-80 overflow-y-auto">
             {editItems.map((item, index) => (
@@ -278,7 +278,7 @@ export function OrderHistory() {
                     {item.productName}
                     {item.isMenu && <Badge variant="outline" className="ml-1 text-[10px]">Menu</Badge>}
                   </div>
-                  <div className="text-sm text-muted-foreground">${item.unitPrice.toFixed(2)} each</div>
+                  <div className="text-sm text-muted-foreground">${item.unitPrice.toFixed(2)} adet fiyatı</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -304,21 +304,21 @@ export function OrderHistory() {
             ))}
             {editItems.length === 0 && (
               <div className="text-center py-4 text-muted-foreground">
-                No items in order. Add items or delete the order.
+                Siparişte ürün yok. Ürün ekleyin veya siparişi silin.
               </div>
             )}
           </div>
           <Separator />
           <div className="flex justify-between text-lg font-semibold">
-            <span>Total</span>
+            <span>Toplam</span>
             <span>${editTotal.toFixed(2)}</span>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOrderToEdit(null)} className="bg-transparent">
-              Cancel
+              İptal
             </Button>
             <Button onClick={handleSaveEdit} disabled={editItems.length === 0}>
-              Save Changes
+              Değişiklikleri Kaydet
             </Button>
           </DialogFooter>
         </DialogContent>

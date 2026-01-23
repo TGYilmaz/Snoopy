@@ -250,7 +250,7 @@ export function DailyReports() {
                 <span className="text-sm">Kredi Kart Cirosu</span>
               </div>
               <div className="text-2xl font-bold text-foreground">
-                ${stats.cardRevenue.toFixed(2)}
+                ₺{stats.cardRevenue.toFixed(2)}
               </div>
             </Card>
 

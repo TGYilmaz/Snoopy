@@ -77,7 +77,7 @@ export function OrderHistory() {
 
   const handleCancelOrder = () => {
     if (orderToCancel) {
-      const updated: Order = { ...orderToCancel, status: 'İptal Edilen' }
+      const updated: Order = { ...orderToCancel, status: 'Cancelled' }
       updateOrder(updated)
       loadOrders()
       setOrderToCancel(null)

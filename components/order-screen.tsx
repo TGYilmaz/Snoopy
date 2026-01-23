@@ -148,8 +148,8 @@ export function OrderScreen() {
         <Tabs defaultValue="products" className="flex-1 flex flex-col">
           <div className="flex items-center gap-4">
             <TabsList>
-              <TabsTrigger value="products">Products</TabsTrigger>
-              <TabsTrigger value="menus">Menus</TabsTrigger>
+              <TabsTrigger value="products">Ürünler</TabsTrigger>
+              <TabsTrigger value="menus">Menüler</TabsTrigger>
             </TabsList>
           </div>
 
@@ -161,7 +161,7 @@ export function OrderScreen() {
                 onClick={() => setSelectedCategory('all')}
                 className="h-12 px-6"
               >
-                All
+                Tümü
               </Button>
               {categories.map((category) => (
                 <Button
@@ -228,7 +228,7 @@ export function OrderScreen() {
                 })}
                 {filteredProducts.length === 0 && (
                   <div className="text-center text-muted-foreground py-12">
-                    No products available. Add products in the Products tab.
+                    Ürün bulunamadı. Ürünler sekmesinden ürün ekleyebilirsiniz.
                   </div>
                 )}
               </div>
@@ -286,7 +286,7 @@ export function OrderScreen() {
                 })}
                 {menus.length === 0 && (
                   <div className="col-span-3 text-center text-muted-foreground py-12">
-                    No menus available. Create menus in the Products tab.
+                    Menü bulunamadı. Ürünler sekmesinden menü oluşturabilirsiniz.
                   </div>
                 )}
               </div>
@@ -299,11 +299,11 @@ export function OrderScreen() {
       <Card className="w-96 flex flex-col bg-card">
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-card-foreground">Current Order</h2>
+            <h2 className="text-lg font-semibold text-card-foreground">Mevcut Sipariş</h2>
             {cart.length > 0 && (
               <Button variant="ghost" size="sm" onClick={clearCart} className="text-muted-foreground">
                 <X className="w-4 h-4 mr-1" />
-                Clear
+                Temizle
               </Button>
             )}
           </div>
@@ -311,7 +311,7 @@ export function OrderScreen() {
 
         <ScrollArea className="flex-1 p-4">
           {cart.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">Tap items to add to order</div>
+            <div className="text-center text-muted-foreground py-8">Siparişe eklemek için ürünlere dokunun</div>
           ) : (
             <div className="space-y-3">
               {cart.map((item) => (
@@ -344,7 +344,7 @@ export function OrderScreen() {
                         </Badge>
                       )}
                     </div>
-                    <div className="text-sm text-muted-foreground">${item.unitPrice.toFixed(2)} each</div>
+                    <div className="text-sm text-muted-foreground">${item.unitPrice.toFixed(2)} adet</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -374,12 +374,12 @@ export function OrderScreen() {
 
         <div className="p-4 border-t border-border space-y-4">
           <div className="flex justify-between text-lg font-semibold text-card-foreground">
-            <span>Total</span>
+            <span>Toplam</span>
             <span>${total.toFixed(2)}</span>
           </div>
 
           <Button className="w-full h-14 text-lg" disabled={cart.length === 0} onClick={() => setShowPaymentDialog(true)}>
-            Charge ${total.toFixed(2)}
+            Ödeme Al ${total.toFixed(2)}
           </Button>
         </div>
       </Card>
@@ -388,23 +388,23 @@ export function OrderScreen() {
       <AlertDialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl">Select Payment Method</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl">Ödeme Yöntemi Seçin</AlertDialogTitle>
             <AlertDialogDescription className="text-lg">
-              Total: <span className="font-semibold text-foreground">${total.toFixed(2)}</span>
+              Toplam: <span className="font-semibold text-foreground">${total.toFixed(2)}</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
             <Button variant="outline" className="h-24 flex flex-col gap-2 bg-transparent" onClick={() => completeOrder('cash')}>
               <Banknote className="w-8 h-8" />
-              <span className="text-lg">Cash</span>
+              <span className="text-lg">Nakit</span>
             </Button>
             <Button variant="outline" className="h-24 flex flex-col gap-2 bg-transparent" onClick={() => completeOrder('card')}>
               <CreditCard className="w-8 h-8" />
-              <span className="text-lg">Card</span>
+              <span className="text-lg">Kredi Kartı</span>
             </Button>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>İptal</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -413,11 +413,11 @@ export function OrderScreen() {
       <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl text-center">Order Complete!</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-lg">Payment received successfully.</AlertDialogDescription>
+            <AlertDialogTitle className="text-2xl text-center">Sipariş Tamamlandı!</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-lg">Ödeme başarıyla alındı.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="justify-center">
-            <AlertDialogAction className="px-8">Done</AlertDialogAction>
+            <AlertDialogAction className="px-8">Tamamlandı</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

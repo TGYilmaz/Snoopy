@@ -2,23 +2,32 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-const VALID_USERNAME = 'snoopy_guzelyurt'
-const VALID_PASSWORD = '**snoopyguzelyurt'
+import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleLogin = () => {
-    if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-      localStorage.setItem('isLoggedIn', 'true')
-      router.push('/')
-    } else {
-      setError('Kullanıcı adı veya şifre hatalı')
+  const handleLogin = async () => {
+    setLoading(true)
+    setError('')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    setLoading(false)
+
+    if (error) {
+      setError('Giriş başarısız')
+      return
     }
+
+    router.push('/')
   }
 
   return (
@@ -28,9 +37,9 @@ export default function LoginPage() {
 
         <input
           className="w-full border rounded px-3 py-2 mb-3"
-          placeholder="Kullanıcı adı"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          placeholder="E-posta"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
@@ -47,9 +56,10 @@ export default function LoginPage() {
 
         <button
           onClick={handleLogin}
+          disabled={loading}
           className="w-full bg-primary text-primary-foreground py-2 rounded"
         >
-          Giriş Yap
+          {loading ? 'Giriş yapılıyor…' : 'Giriş Yap'}
         </button>
       </div>
     </div>

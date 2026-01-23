@@ -77,7 +77,7 @@ export function OrderHistory() {
 
   const handleCancelOrder = () => {
     if (orderToCancel) {
-      const updated: Order = { ...orderToCancel, status: 'cancelled' }
+      const updated: Order = { ...orderToCancel, status: 'İptal Edilen' }
       updateOrder(updated)
       loadOrders()
       setOrderToCancel(null)
@@ -194,7 +194,7 @@ export function OrderHistory() {
                           <Pencil className="w-4 h-4 mr-2" />
                           Siparişi Düzenle
                         </DropdownMenuItem>
-                        {order.status === 'completed' && (
+                        {order.status === 'tamamlandı' && (
                           <DropdownMenuItem onClick={() => setOrderToCancel(order)}>
                             <XCircle className="w-4 h-4 mr-2" />
                             Siparişi İptal Et
@@ -253,8 +253,9 @@ export function OrderHistory() {
           <AlertDialogHeader>
             <AlertDialogTitle>Sipariş İptal Edilsin Mi?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will mark order #{orderToCancel?.id.slice(-6).toUpperCase()} as cancelled. The order will remain in history.
-            </AlertDialogDescription>
+  #{orderToCancel?.id.slice(-6).toUpperCase()} numaralı sipariş iptal edilecektir. 
+  Sipariş geçmişte görünmeye devam eder.
+</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Geri Dön</AlertDialogCancel>

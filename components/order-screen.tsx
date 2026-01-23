@@ -217,7 +217,7 @@ export function OrderScreen() {
                                 <div className="font-medium text-card-foreground group-hover:text-accent-foreground text-balance line-clamp-2">
                                   {product.name}
                                 </div>
-                                <div className="text-lg font-semibold text-primary mt-1">${product.price.toFixed(2)}</div>
+                                <div className="text-lg font-semibold text-primary mt-1">₺{product.price.toFixed(2)}</div>
                               </div>
                             </div>
                           </button>
@@ -278,7 +278,7 @@ export function OrderScreen() {
                             })}
                             {menuItems.length > 2 && '...'}
                           </div>
-                          <div className="text-lg font-semibold text-primary mt-1">${menu.price.toFixed(2)}</div>
+                          <div className="text-lg font-semibold text-primary mt-1">₺{menu.price.toFixed(2)}</div>
                         </div>
                       </div>
                     </button>
@@ -311,7 +311,7 @@ export function OrderScreen() {
 
         <ScrollArea className="flex-1 p-4">
           {cart.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">Siparişe eklemek için ürünlere dokunun</div>
+            <div className="text-center text-muted-foreground py-8">Siparişe eklemek için ürün seçin</div>
           ) : (
             <div className="space-y-3">
               {cart.map((item) => (
@@ -344,7 +344,7 @@ export function OrderScreen() {
                         </Badge>
                       )}
                     </div>
-                    <div className="text-sm text-muted-foreground">${item.unitPrice.toFixed(2)} adet</div>
+                    <div className="text-sm text-muted-foreground">₺{item.unitPrice.toFixed(2)} adet</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -365,7 +365,7 @@ export function OrderScreen() {
                       <Plus className="w-3 h-3" />
                     </Button>
                   </div>
-                  <div className="w-16 text-right font-medium text-card-foreground">${item.totalPrice.toFixed(2)}</div>
+                  <div className="w-16 text-right font-medium text-card-foreground">₺{item.totalPrice.toFixed(2)}</div>
                 </div>
               ))}
             </div>
@@ -417,7 +417,7 @@ export function OrderScreen() {
             <AlertDialogDescription className="text-center text-lg">Ödeme başarıyla alındı.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="justify-center">
-            <AlertDialogAction className="px-8">Tamamlandı</AlertDialogAction>
+            <AlertDialogAction className="px-8">Kapat</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

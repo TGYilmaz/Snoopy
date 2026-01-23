@@ -22,15 +22,15 @@ import { ShopSettings } from '@/lib/pos-types'
 import { getShopSettings, saveShopSettings } from '@/lib/pos-store'
 
 const navItems = [
-  { href: '/', label: 'Orders', icon: ShoppingCart },
-  { href: '/products', label: 'Products', icon: Package },
-  { href: '/history', label: 'History', icon: History },
-  { href: '/reports', label: 'Daily Close', icon: BarChart3 },
+  { href: '/', label: 'Siparişler', icon: ShoppingCart },
+  { href: '/products', label: 'Ürünler', icon: Package },
+  { href: '/history', label: 'Geçmiş', icon: History },
+  { href: '/reports', label: 'Gün Sonu', icon: BarChart3 },
 ]
 
 export function POSSidebar() {
   const pathname = usePathname()
-  const [settings, setSettings] = useState<ShopSettings>({ name: 'Burger POS' })
+  const [settings, setSettings] = useState<ShopSettings>({ name: 'Snoopy' })
   const [dialogOpen, setDialogOpen] = useState(false)
   const [formData, setFormData] = useState<ShopSettings>({ name: '' })
 
@@ -67,7 +67,7 @@ export function POSSidebar() {
         <button
           onClick={openSettingsDialog}
           className="mb-6 group relative"
-          title="Shop Settings"
+          title="Mağaza Ayarları"
         >
           {settings.image ? (
             <div className="w-12 h-12 rounded-xl overflow-hidden relative">
@@ -113,7 +113,7 @@ export function POSSidebar() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Shop Settings</DialogTitle>
+            <DialogTitle>Mağaza Ayarları</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex flex-col items-center gap-4">
@@ -122,7 +122,7 @@ export function POSSidebar() {
                   <div className="w-24 h-24 rounded-xl overflow-hidden relative">
                     <Image
                       src={formData.image || "/placeholder.svg"}
-                      alt="Shop logo"
+                      alt="Mağaza Logosu"
                       fill
                       className="object-cover"
                     />
@@ -136,7 +136,7 @@ export function POSSidebar() {
               <div>
                 <Label htmlFor="shop-image" className="cursor-pointer">
                   <Button variant="outline" asChild>
-                    <span>Upload Logo</span>
+                    <span>Logo Yükle</span>
                   </Button>
                 </Label>
                 <Input
@@ -149,20 +149,20 @@ export function POSSidebar() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="shop-name">Shop Name</Label>
+              <Label htmlFor="shop-name">Mağaza Adı</Label>
               <Input
                 id="shop-name"
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter shop name"
+                placeholder="Mağaza adını girin"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
+              İptal
             </Button>
-            <Button onClick={handleSave}>Save</Button>
+            <Button onClick={handleSave}>Kaydet</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

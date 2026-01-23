@@ -375,11 +375,11 @@ export function OrderScreen() {
         <div className="p-4 border-t border-border space-y-4">
           <div className="flex justify-between text-lg font-semibold text-card-foreground">
             <span>Toplam</span>
-            <span>${total.toFixed(2)}</span>
+            <span>₺{total.toFixed(2)}</span>
           </div>
 
           <Button className="w-full h-14 text-lg" disabled={cart.length === 0} onClick={() => setShowPaymentDialog(true)}>
-            Ödeme Al ${total.toFixed(2)}
+            Ödeme Al ₺{total.toFixed(2)}
           </Button>
         </div>
       </Card>

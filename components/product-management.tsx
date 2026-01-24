@@ -380,7 +380,7 @@ const loadData = async () => {
                         {categoryProducts.length}
                       </Badge>
                     </h2>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {categoryProducts.map((product) => (
                         <Card key={product.id} className={`p-4 ${!product.active ? 'opacity-50' : ''}`}>
                           <div className="flex items-start gap-4">
@@ -449,7 +449,7 @@ const loadData = async () => {
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="grid grid-cols-2 gap-4 pr-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pr-4">
               {menus.map((menu) => {
                 const menuItems = menu.items || []
                 const totalItems = menuItems.reduce((sum, item) => sum + item.quantity, 0)
@@ -528,7 +528,7 @@ const loadData = async () => {
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="grid grid-cols-3 gap-4 pr-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pr-4">
               {categories.map((category) => {
                 const productCount = (groupedProducts[category.id] || []).length
                 return (

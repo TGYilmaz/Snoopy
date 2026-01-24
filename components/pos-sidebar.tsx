@@ -5,6 +5,7 @@ import React from "react"
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { ShoppingCart, Package, History, BarChart3, Settings, ImageIcon } from 'lucide-react'
@@ -35,9 +36,13 @@ export function POSSidebar() {
   const [formData, setFormData] = useState<ShopSettings>({ name: '' })
 
   useEffect(() => {
-    const saved = getShopSettings()
-    setSettings(saved)
-  }, [])
+  loadSettings()
+}, [])
+
+const loadSettings = async () => {
+  const saved = await getShopSettings()
+  setSettings(saved)
+}
 
   const openSettingsDialog = () => {
     setFormData(settings)
@@ -55,16 +60,16 @@ export function POSSidebar() {
     }
   }
 
-  const handleSave = () => {
-    saveShopSettings(formData)
-    setSettings(formData)
-    setDialogOpen(false)
-  }
+  const handleSave = async () => {
+  await saveShopSettings(formData)
+  setSettings(formData)
+  setDialogOpen(false)
+}
 
-const logout = () => {
-    localStorage.removeItem('isLoggedIn')
-    window.location.href = '/login'
-  }
+const logout = async () => {
+  await supabase.auth.signOut()
+  window.location.href = '/login'
+}
   
   return (
     <>

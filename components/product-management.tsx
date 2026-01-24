@@ -100,16 +100,23 @@ export function ProductManagement() {
   })
 
   useEffect(() => {
-    setProducts(getProducts())
-    setMenus(getMenus())
-    setCategories(getCategories())
-  }, [])
+  loadData()
+}, [])
 
-  const refreshData = () => {
-    setProducts(getProducts())
-    setMenus(getMenus())
-    setCategories(getCategories())
-  }
+const loadData = async () => {
+  const [productsData, menusData, categoriesData] = await Promise.all([
+    getProducts(),
+    getMenus(),
+    getCategories(),
+  ])
+  setProducts(productsData)
+  setMenus(menusData)
+  setCategories(categoriesData)
+}
+
+  const refreshData = async () => {
+  await loadData()
+}
 
   const getCategoryById = (id: string) => categories.find((c) => c.id === id)
 
@@ -153,43 +160,43 @@ export function ProductManagement() {
     }
   }
 
-  const handleSave = () => {
-    const price = parseFloat(formData.price)
-    if (!formData.name.trim() || isNaN(price) || price <= 0 || !formData.categoryId) return
+  const handleSave = async () => {
+  const price = parseFloat(formData.price)
+  if (!formData.name.trim() || isNaN(price) || price <= 0 || !formData.categoryId) return
 
-    const product: Product = {
-      id: editingProduct?.id || generateId(),
-      name: formData.name.trim(),
-      price,
-      categoryId: formData.categoryId,
-      image: formData.image,
-      active: formData.active,
-      createdAt: editingProduct?.createdAt || new Date().toISOString(),
-    }
-
-    saveProduct(product)
-    refreshData()
-    setDialogOpen(false)
+  const product: Product = {
+    id: editingProduct?.id || generateId(),
+    name: formData.name.trim(),
+    price,
+    categoryId: formData.categoryId,
+    image: formData.image,
+    active: formData.active,
+    createdAt: editingProduct?.createdAt || new Date().toISOString(),
   }
+
+  await saveProduct(product)
+  await refreshData()
+  setDialogOpen(false)
+}
 
   const confirmDelete = (product: Product) => {
     setProductToDelete(product)
     setDeleteDialogOpen(true)
   }
 
-  const handleDelete = () => {
-    if (productToDelete) {
-      deleteProduct(productToDelete.id)
-      refreshData()
-      setDeleteDialogOpen(false)
-      setProductToDelete(null)
-    }
+  const handleDelete = async () => {
+  if (productToDelete) {
+    await deleteProduct(productToDelete.id)
+    await refreshData()
+    setDeleteDialogOpen(false)
+    setProductToDelete(null)
   }
+}
 
-  const toggleActive = (product: Product) => {
-    saveProduct({ ...product, active: !product.active })
-    refreshData()
-  }
+  const toggleActive = async (product: Product) => {
+  await saveProduct({ ...product, active: !product.active })
+  await refreshData()
+}
 
   // Menu functions
   const openNewMenuDialog = () => {
@@ -210,43 +217,43 @@ export function ProductManagement() {
     setMenuDialogOpen(true)
   }
 
-  const handleMenuSave = () => {
-    const price = parseFloat(menuFormData.price)
-    if (!menuFormData.name.trim() || isNaN(price) || price <= 0 || menuFormData.items.length === 0) return
+  const handleMenuSave = async () => {
+  const price = parseFloat(menuFormData.price)
+  if (!menuFormData.name.trim() || isNaN(price) || price <= 0 || menuFormData.items.length === 0) return
 
-    const menu: Menu = {
-      id: editingMenu?.id || generateId(),
-      name: menuFormData.name.trim(),
-      price,
-      items: menuFormData.items,
-      image: menuFormData.image,
-      active: menuFormData.active,
-      createdAt: editingMenu?.createdAt || new Date().toISOString(),
-    }
-
-    saveMenu(menu)
-    refreshData()
-    setMenuDialogOpen(false)
+  const menu: Menu = {
+    id: editingMenu?.id || generateId(),
+    name: menuFormData.name.trim(),
+    price,
+    items: menuFormData.items,
+    image: menuFormData.image,
+    active: menuFormData.active,
+    createdAt: editingMenu?.createdAt || new Date().toISOString(),
   }
+
+  await saveMenu(menu)
+  await refreshData()
+  setMenuDialogOpen(false)
+}
 
   const confirmDeleteMenu = (menu: Menu) => {
     setMenuToDelete(menu)
     setDeleteMenuDialogOpen(true)
   }
 
-  const handleDeleteMenu = () => {
-    if (menuToDelete) {
-      deleteMenu(menuToDelete.id)
-      refreshData()
-      setDeleteMenuDialogOpen(false)
-      setMenuToDelete(null)
-    }
+  const handleDeleteMenu = async () => {
+  if (menuToDelete) {
+    await deleteMenu(menuToDelete.id)
+    await refreshData()
+    setDeleteMenuDialogOpen(false)
+    setMenuToDelete(null)
   }
+}
 
-  const toggleMenuActive = (menu: Menu) => {
-    saveMenu({ ...menu, active: !menu.active })
-    refreshData()
-  }
+  const toggleMenuActive = async (menu: Menu) => {
+  await saveMenu({ ...menu, active: !menu.active })
+  await refreshData()
+}
 
   const addProductToMenu = (productId: string) => {
     setMenuFormData((prev) => {
@@ -298,33 +305,33 @@ export function ProductManagement() {
     setCategoryDialogOpen(true)
   }
 
-  const handleCategorySave = () => {
-    if (!categoryFormData.name.trim()) return
+  const handleCategorySave = async () => {
+  if (!categoryFormData.name.trim()) return
 
-    const category: Category = {
-      id: editingCategory?.id || generateId(),
-      name: categoryFormData.name.trim(),
-      color: categoryFormData.color,
-    }
-
-    saveCategory(category)
-    refreshData()
-    setCategoryDialogOpen(false)
+  const category: Category = {
+    id: editingCategory?.id || generateId(),
+    name: categoryFormData.name.trim(),
+    color: categoryFormData.color,
   }
+
+  await saveCategory(category)
+  await refreshData()
+  setCategoryDialogOpen(false)
+}
 
   const confirmDeleteCategory = (category: Category) => {
     setCategoryToDelete(category)
     setDeleteCategoryDialogOpen(true)
   }
 
-  const handleDeleteCategory = () => {
-    if (categoryToDelete) {
-      deleteCategory(categoryToDelete.id)
-      refreshData()
-      setDeleteCategoryDialogOpen(false)
-      setCategoryToDelete(null)
-    }
+  const handleDeleteCategory = async () => {
+  if (categoryToDelete) {
+    await deleteCategory(categoryToDelete.id)
+    await refreshData()
+    setDeleteCategoryDialogOpen(false)
+    setCategoryToDelete(null)
   }
+}
 
   const groupedProducts = products.reduce(
     (acc, product) => {

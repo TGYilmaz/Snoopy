@@ -24,9 +24,13 @@ export function DailyReports() {
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0])
 
   useEffect(() => {
-    setOrders(getOrders())
-  }, [])
+  loadOrders()
+}, [])
 
+const loadOrders = async () => {
+  const ordersData = await getOrders()
+  setOrders(ordersData)
+}
   const filteredOrders = useMemo(() => {
     if (dateMode === 'single') {
       return orders.filter(order => order.createdAt.startsWith(singleDate))

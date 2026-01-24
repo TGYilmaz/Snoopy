@@ -212,7 +212,7 @@ const loadOrders = async () => {
       <ScrollArea className="flex-1">
         <div className="space-y-6 pr-4">
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <DollarSign className="w-5 h-5" />

@@ -418,23 +418,47 @@ export function generateId(): string {
 }
 
 // ==================== AUTH ====================
-export function login(username: string, password: string): boolean {
-  if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(AUTH_KEY, 'true')
+export async function login(email: string, password: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    
+    if (error) {
+      console.error('Login error:', error)
+      return false
     }
-    return true
-  }
-  return false
-}
-
-export function logout(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(AUTH_KEY)
+    
+    return !!data.session
+  } catch (error) {
+    console.error('Login error:', error)
+    return false
   }
 }
 
-export function isAuthenticated(): boolean {
-  if (typeof window === 'undefined') return false
-  return localStorage.getItem(AUTH_KEY) === 'true'
+export async function logout(): Promise<void> {
+  try {
+    await supabase.auth.signOut()
+  } catch (error) {
+    console.error('Logout error:', error)
+  }
+}
+
+export async function isAuthenticated(): Promise<boolean> {
+  try {
+    const { data } = await supabase.auth.getSession()
+    return !!data.session
+  } catch (error) {
+    return false
+  }
+}
+
+export async function getCurrentUser() {
+  try {
+    const { data } = await supabase.auth.getUser()
+    return data.user
+  } catch (error) {
+    return null
+  }
 }

@@ -151,7 +151,7 @@ const loadData = async () => {
   )
 
   return (
-    <div className="flex h-full gap-6">
+    <div className="flex flex-col md:flex-row h-full gap-6">
       {/* Menu Section */}
       <div className="flex-1 flex flex-col gap-4">
         <Tabs defaultValue="products" className="flex-1 flex flex-col">

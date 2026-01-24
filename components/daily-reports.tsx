@@ -291,7 +291,7 @@ const loadOrders = async () => {
           {/* Top Products */}
           {stats.topProducts.length > 0 && (
             <Card className="p-4">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Top Selling Products</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">En Çok Satan Ürünler</h2>
               <div className="space-y-3">
                 {stats.topProducts.map((product, index) => (
                   <div key={product.name} className="flex items-center justify-between">
@@ -303,7 +303,7 @@ const loadOrders = async () => {
                     </div>
                     <div className="text-right">
                       <div className="font-medium text-foreground">{product.quantity} sold</div>
-                      <div className="text-sm text-muted-foreground">${product.revenue.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground">₺{product.revenue.toFixed(2)}</div>
                     </div>
                   </div>
                 ))}

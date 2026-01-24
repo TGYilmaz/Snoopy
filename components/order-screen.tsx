@@ -305,7 +305,7 @@ const loadData = async () => {
       </div>
 
       {/* Cart Section */}
-      <Card className="w-96 flex flex-col bg-card">
+      <Card className="w-full md:w-96 flex flex-col bg-card md:max-h-screen">
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-card-foreground">Mevcut Sipariş</h2>

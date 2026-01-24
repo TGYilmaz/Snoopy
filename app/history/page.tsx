@@ -34,7 +34,7 @@ export default function HistoryPage() {
   return (
   <div className="min-h-screen flex bg-background">
     <POSSidebar />
-    <main className="flex-1 p-6 overflow-y-auto">
+    <main className="flex-1 p-6 pb-20 md:pb-6 overflow-y-auto">
       <OrderHistory />
     </main>
   </div>

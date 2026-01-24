@@ -31,10 +31,19 @@ export function OrderScreen() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
 
   useEffect(() => {
-    setProducts(getProducts().filter((p) => p.active))
-    setMenus(getMenus().filter((m) => m.active))
-    setCategories(getCategories())
-  }, [])
+  loadData()
+}, [])
+
+const loadData = async () => {
+  const [productsData, menusData, categoriesData] = await Promise.all([
+    getProducts(),
+    getMenus(),
+    getCategories(),
+  ])
+  setProducts(productsData.filter((p) => p.active))
+  setMenus(menusData.filter((m) => m.active))
+  setCategories(categoriesData)
+}
 
   const getProductById = (id: string) => products.find((p) => p.id === id)
 
@@ -109,22 +118,22 @@ export function OrderScreen() {
   const total = cart.reduce((sum, item) => sum + item.totalPrice, 0)
 
   const completeOrder = useCallback(
-    (paymentMethod: 'cash' | 'card') => {
-      const order: Order = {
-        id: generateId(),
-        items: cart,
-        total,
-        paymentMethod,
-        status: 'completed',
-        createdAt: new Date().toISOString(),
-      }
-      saveOrder(order)
-      setCart([])
-      setShowPaymentDialog(false)
-      setShowSuccessDialog(true)
-    },
-    [cart, total]
-  )
+  async (paymentMethod: 'cash' | 'card') => {
+    const order: Order = {
+      id: generateId(),
+      items: cart,
+      total,
+      paymentMethod,
+      status: 'completed',
+      createdAt: new Date().toISOString(),
+    }
+    await saveOrder(order)
+    setCart([])
+    setShowPaymentDialog(false)
+    setShowSuccessDialog(true)
+  },
+  [cart, total]
+)
 
   const filteredProducts = selectedCategory === 'all' 
     ? products 

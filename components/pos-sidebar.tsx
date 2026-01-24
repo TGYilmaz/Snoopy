@@ -62,7 +62,7 @@ const loadSettings = async () => {
 
   const handleSave = async () => {
   await saveShopSettings(formData)
-  setSettings(formData)
+  await loadSettings() // Yeniden yükle
   setDialogOpen(false)
 }
 

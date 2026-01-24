@@ -38,4 +38,5 @@ export default function HomePage() {
       <OrderScreen />
     </main>
   </div>
-)
+  )
+}

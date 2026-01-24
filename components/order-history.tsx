@@ -44,9 +44,10 @@ export function OrderHistory() {
   const [orderToEdit, setOrderToEdit] = useState<Order | null>(null)
   const [editItems, setEditItems] = useState<OrderItem[]>([])
 
-  const loadOrders = useCallback(() => {
-    setOrders(getOrders())
-  }, [])
+  const loadOrders = useCallback(async () => {
+  const ordersData = await getOrders()
+  setOrders(ordersData)
+}, [])
 
   useEffect(() => {
     loadOrders()
@@ -67,22 +68,22 @@ export function OrderHistory() {
     })
   }
 
-  const handleDeleteOrder = () => {
-    if (orderToDelete) {
-      deleteOrder(orderToDelete.id)
-      loadOrders()
-      setOrderToDelete(null)
-    }
+  const handleDeleteOrder = async () => {
+  if (orderToDelete) {
+    await deleteOrder(orderToDelete.id)
+    await loadOrders()
+    setOrderToDelete(null)
   }
+}
 
-  const handleCancelOrder = () => {
-    if (orderToCancel) {
-      const updated: Order = { ...orderToCancel, status: 'Cancelled' }
-      updateOrder(updated)
-      loadOrders()
-      setOrderToCancel(null)
-    }
+  const handleCancelOrder = async () => {
+  if (orderToCancel) {
+    const updated: Order = { ...orderToCancel, status: 'cancelled' }
+    await updateOrder(updated)
+    await loadOrders()
+    setOrderToCancel(null)
   }
+}
 
   const openEditDialog = (order: Order) => {
     setOrderToEdit(order)
@@ -105,19 +106,19 @@ export function OrderHistory() {
     })
   }
 
-  const handleSaveEdit = () => {
-    if (orderToEdit && editItems.length > 0) {
-      const newTotal = editItems.reduce((sum, item) => sum + item.totalPrice, 0)
-      const updated: Order = {
-        ...orderToEdit,
-        items: editItems,
-        total: newTotal,
-      }
-      updateOrder(updated)
-      loadOrders()
-      setOrderToEdit(null)
+  const handleSaveEdit = async () => {
+  if (orderToEdit && editItems.length > 0) {
+    const newTotal = editItems.reduce((sum, item) => sum + item.totalPrice, 0)
+    const updated: Order = {
+      ...orderToEdit,
+      items: editItems,
+      total: newTotal,
     }
+    await updateOrder(updated)
+    await loadOrders()
+    setOrderToEdit(null)
   }
+}
 
   const editTotal = editItems.reduce((sum, item) => sum + item.totalPrice, 0)
 

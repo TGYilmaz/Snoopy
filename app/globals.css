@@ -123,3 +123,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix scrolling issue */
+html, body {
+  height: 100%;
+  overflow: auto !important;
+}
+
+#__next {
+  height: 100%;
+}
+
+/* ScrollArea components should work properly */
+[data-radix-scroll-area-viewport] {
+  height: 100% !important;
+}

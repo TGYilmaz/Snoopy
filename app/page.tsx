@@ -11,17 +11,28 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    checkAuth()
-  }, [])
+    let mounted = true
 
-  const checkAuth = async () => {
-    const { data } = await supabase.auth.getSession()
-    if (!data.session) {
-      router.replace('/login')
-    } else {
-      setLoading(false)
+    const initAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!mounted) return
+
+      if (!session) {
+        router.replace('/login')
+      } else {
+        setLoading(false)
+      }
     }
-  }
+
+    initAuth()
+
+    return () => {
+      mounted = false
+    }
+  }, [router])
 
   if (loading) {
     return (
@@ -32,11 +43,11 @@ export default function HomePage() {
   }
 
   return (
-  <div className="min-h-screen flex bg-background">
-    <POSSidebar />
-    <main className="flex-1 p-6 overflow-y-auto">
-      <OrderScreen />
-    </main>
-  </div>
+    <div className="min-h-screen flex bg-background">
+      <POSSidebar />
+      <main className="flex-1 p-6 overflow-y-auto">
+        <OrderScreen />
+      </main>
+    </div>
   )
 }

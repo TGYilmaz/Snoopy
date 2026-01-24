@@ -279,7 +279,7 @@ const loadOrders = async () => {
                     {stats.bestSeller.name}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {stats.bestSeller.quantity} sold
+                    {stats.bestSeller.quantity} satış
                   </div>
                 </div>
               ) : (
@@ -302,7 +302,7 @@ const loadOrders = async () => {
                       <span className="font-medium text-foreground">{product.name}</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium text-foreground">{product.quantity} sold</div>
+                      <div className="font-medium text-foreground">{product.quantity} satış</div>
                       <div className="text-sm text-muted-foreground">₺{product.revenue.toFixed(2)}</div>
                     </div>
                   </div>

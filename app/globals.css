@@ -124,22 +124,31 @@
   }
 }
 
-/* Fix scrolling issue */
-html, body {
-  height: 100%;
-  overflow: auto !important;
+/* Mobile Dialog Fixes */
+@media (max-width: 768px) {
+  [role="dialog"] {
+    max-width: calc(100vw - 2rem) !important;
+    max-height: calc(100vh - 4rem) !important;
+    margin: 2rem 1rem !important;
+  }
+  
+  /* Order screen cart should be full width on mobile */
+  .order-cart-mobile {
+    position: fixed;
+    bottom: 4rem;
+    left: 0;
+    right: 0;
+    max-height: 50vh;
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  }
 }
 
-#__next {
-  height: 100%;
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
-
-/* ScrollArea components should work properly */
-[data-radix-scroll-area-viewport] {
-  height: 100% !important;
-}
-
-html, body {
-  max-width: 100%;
-  overflow-x: hidden;
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

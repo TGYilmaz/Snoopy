@@ -32,11 +32,10 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="h-screen flex bg-background">
-      <POSSidebar />
-      <main className="flex-1 p-6 overflow-hidden">
-        <ProductManagement />
-      </main>
-    </div>
-  )
-}
+  <div className="min-h-screen flex bg-background">
+    <POSSidebar />
+    <main className="flex-1 p-6 overflow-y-auto">
+      <ProductManagement />
+    </main>
+  </div>
+)

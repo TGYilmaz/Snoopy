@@ -164,11 +164,20 @@ const loadData = async () => {
 
           <TabsContent value="products" className="flex-1 flex flex-col gap-4 mt-4">
             {/* Category Tabs */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+  <style jsx>{`
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  `}</style>
               <Button
                 variant={selectedCategory === 'all' ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory('all')}
-                className="h-12 px-6"
+                className="h-12 px-6 whitespace-nowrap flex-shrink-0"
               >
                 Tümü
               </Button>
@@ -199,7 +208,7 @@ const loadData = async () => {
                           {category.name}
                         </h3>
                       )}
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {categoryProducts.map((product) => (
                           <button
                             key={product.id}
@@ -246,7 +255,7 @@ const loadData = async () => {
 
           <TabsContent value="menus" className="flex-1 flex flex-col gap-4 mt-4">
             <ScrollArea className="flex-1">
-              <div className="grid grid-cols-3 gap-3 pr-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pr-4">
                 {menus.map((menu) => {
                   const menuItems = menu.items || []
                   return (

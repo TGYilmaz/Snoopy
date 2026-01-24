@@ -38,4 +38,5 @@ export default function ProductsPage() {
       <ProductManagement />
     </main>
   </div>
-)
+  )
+}  

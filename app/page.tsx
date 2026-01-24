@@ -43,7 +43,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <POSSidebar />
       <main className="flex-1 p-6 overflow-y-auto">
         <OrderScreen />

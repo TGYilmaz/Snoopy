@@ -96,7 +96,7 @@ export default function LoginPage() {
 
         <div className="mt-6 pt-6 border-t border-border text-center">
           <p className="text-xs text-muted-foreground">
-            Demo: admin@burgerpos.com / 123456
+            Mail adresinizi ve şifrenizi giriniz
           </p>
         </div>
       </div>

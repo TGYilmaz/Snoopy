@@ -7,6 +7,9 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Separator } from '@/components/ui/separator'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,8 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, Minus, Trash2, CreditCard, Banknote, X, ImageIcon, Package } from 'lucide-react'
-import { Product, Menu, OrderItem, Order, Category } from '@/lib/pos-types'
+import { Plus, Minus, Trash2, CreditCard, Banknote, X, ImageIcon, Package, Wallet } from 'lucide-react'
+import { Product, Menu, OrderItem, Order, Category, PaymentDetail } from '@/lib/pos-types'
 import { getProducts, getMenus, getCategories, saveOrder, generateId } from '@/lib/pos-store'
 
 export function OrderScreen() {
@@ -29,21 +32,28 @@ export function OrderScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  
+  // Ödeme dialog state'leri
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [cashAmount, setCashAmount] = useState('')
+  const [cardAmount, setCardAmount] = useState('')
+  const [paymentStep, setPaymentStep] = useState<'method' | 'details'>('method')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'mixed' | null>(null)
 
   useEffect(() => {
-  loadData()
-}, [])
+    loadData()
+  }, [])
 
-const loadData = async () => {
-  const [productsData, menusData, categoriesData] = await Promise.all([
-    getProducts(),
-    getMenus(),
-    getCategories(),
-  ])
-  setProducts(productsData.filter((p) => p.active))
-  setMenus(menusData.filter((m) => m.active))
-  setCategories(categoriesData)
-}
+  const loadData = async () => {
+    const [productsData, menusData, categoriesData] = await Promise.all([
+      getProducts(),
+      getMenus(),
+      getCategories(),
+    ])
+    setProducts(productsData.filter((p) => p.active))
+    setMenus(menusData.filter((m) => m.active))
+    setCategories(categoriesData)
+  }
 
   const getProductById = (id: string) => products.find((p) => p.id === id)
 
@@ -59,7 +69,21 @@ const loadData = async () => {
       }
       return [
         ...prev,
-        {
+        {/* Success Dialog */}
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl text-center">Sipariş Tamamlandı!</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-lg">Ödeme başarıyla alındı.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="justify-center">
+            <AlertDialogAction className="px-8">Kapat</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}
           productId: product.id,
           productName: product.name,
           productImage: product.image,
@@ -117,23 +141,120 @@ const loadData = async () => {
 
   const total = cart.reduce((sum, item) => sum + item.totalPrice, 0)
 
-  const completeOrder = useCallback(
-  async (paymentMethod: 'cash' | 'card') => {
+  const getItemKey = (item: OrderItem) => `${item.productId}-${item.isMenu ? 'menu' : 'product'}`
+
+  const toggleItemSelection = (item: OrderItem) => {
+    const key = getItemKey(item)
+    setSelectedItems(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(key)) {
+        newSet.delete(key)
+      } else {
+        newSet.add(key)
+      }
+      return newSet
+    })
+  }
+
+  const selectAllItems = () => {
+    setSelectedItems(new Set(cart.map(getItemKey)))
+  }
+
+  const deselectAllItems = () => {
+    setSelectedItems(new Set())
+  }
+
+  const getSelectedTotal = () => {
+    return cart
+      .filter(item => selectedItems.has(getItemKey(item)))
+      .reduce((sum, item) => sum + item.totalPrice, 0)
+  }
+
+  const openPaymentDialog = () => {
+    // Tüm ürünleri otomatik seç
+    selectAllItems()
+    setPaymentMethod(null)
+    setPaymentStep('method')
+    setCashAmount('')
+    setCardAmount('')
+    setShowPaymentDialog(true)
+  }
+
+  const handlePaymentMethodSelect = (method: 'cash' | 'card' | 'mixed') => {
+    setPaymentMethod(method)
+    
+    if (method === 'cash' || method === 'card') {
+      // Tek ödeme yöntemi için direkt tamamla
+      completeOrder(method, selectedItems.size > 0 && selectedItems.size < cart.length)
+    } else {
+      // Karma ödeme için detay ekranına geç
+      setPaymentStep('details')
+    }
+  }
+
+  const completeOrder = async (
+    method: 'cash' | 'card' | 'mixed',
+    isPartial: boolean = false
+  ) => {
+    const cash = parseFloat(cashAmount) || 0
+    const card = parseFloat(cardAmount) || 0
+    
+    if (method === 'mixed' && (cash + card) === 0) {
+      alert('Lütfen ödeme tutarlarını giriniz')
+      return
+    }
+
+    const payments: PaymentDetail[] = []
+    
+    if (method === 'cash') {
+      payments.push({ method: 'cash', amount: isPartial ? getSelectedTotal() : total })
+    } else if (method === 'card') {
+      payments.push({ method: 'card', amount: isPartial ? getSelectedTotal() : total })
+    } else if (method === 'mixed') {
+      if (cash > 0) payments.push({ method: 'cash', amount: cash })
+      if (card > 0) payments.push({ method: 'card', amount: card })
+    }
+
+    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
+    const expectedAmount = isPartial ? getSelectedTotal() : total
+
+    if (method === 'mixed' && Math.abs(totalPaid - expectedAmount) > 0.01) {
+      alert(`Ödeme tutarı toplam tutara eşit olmalıdır. Beklenen: ₺${expectedAmount.toFixed(2)}, Girilen: ₺${totalPaid.toFixed(2)}`)
+      return
+    }
+
+    // Kısmi ödeme ise sadece seçili ürünleri kaydet
+    const itemsToSave = isPartial 
+      ? cart.filter(item => selectedItems.has(getItemKey(item)))
+      : cart
+
     const order: Order = {
       id: generateId(),
-      items: cart,
-      total,
-      paymentMethod,
+      items: itemsToSave,
+      total: isPartial ? getSelectedTotal() : total,
+      paymentMethod: method,
+      payments,
       status: 'completed',
       createdAt: new Date().toISOString(),
     }
+
     await saveOrder(order)
-    setCart([])
+
+    // Kısmi ödeme ise, ödenen ürünleri sepetten kaldır
+    if (isPartial) {
+      setCart(prev => prev.filter(item => !selectedItems.has(getItemKey(item))))
+    } else {
+      setCart([])
+    }
+
     setShowPaymentDialog(false)
     setShowSuccessDialog(true)
-  },
-  [cart, total]
-)
+    setPaymentStep('method')
+    setPaymentMethod(null)
+    setCashAmount('')
+    setCardAmount('')
+    deselectAllItems()
+  }
 
   const filteredProducts = selectedCategory === 'all' 
     ? products 
@@ -150,6 +271,11 @@ const loadData = async () => {
     {} as Record<string, Product[]>
   )
 
+  const selectedTotal = getSelectedTotal()
+  const remainingCash = parseFloat(cashAmount) || 0
+  const remainingCard = parseFloat(cardAmount) || 0
+  const remainingAmount = selectedTotal - remainingCash - remainingCard
+
   return (
     <div className="flex flex-col md:flex-row h-full gap-6">
       {/* Menu Section */}
@@ -165,15 +291,15 @@ const loadData = async () => {
           <TabsContent value="products" className="flex-1 flex flex-col gap-4 mt-4">
             {/* Category Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-  <style jsx>{`
-    .scrollbar-hide::-webkit-scrollbar {
-      display: none;
-    }
-    .scrollbar-hide {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-  `}</style>
+              <style jsx>{`
+                .scrollbar-hide::-webkit-scrollbar {
+                  display: none;
+                }
+                .scrollbar-hide {
+                  -ms-overflow-style: none;
+                  scrollbar-width: none;
+                }
+              `}</style>
               <Button
                 variant={selectedCategory === 'all' ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory('all')}
@@ -333,7 +459,7 @@ const loadData = async () => {
           ) : (
             <div className="space-y-3">
               {cart.map((item) => (
-                <div key={`${item.productId}-${item.isMenu ? 'menu' : 'product'}`} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <div key={getItemKey(item)} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                   <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                     {item.productImage ? (
                       <Image
@@ -396,7 +522,7 @@ const loadData = async () => {
             <span>₺{total.toFixed(2)}</span>
           </div>
 
-          <Button className="w-full h-14 text-lg" disabled={cart.length === 0} onClick={() => setShowPaymentDialog(true)}>
+          <Button className="w-full h-14 text-lg" disabled={cart.length === 0} onClick={openPaymentDialog}>
             Ödeme Al ₺{total.toFixed(2)}
           </Button>
         </div>
@@ -404,41 +530,192 @@ const loadData = async () => {
 
       {/* Payment Dialog */}
       <AlertDialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl">Ödeme Yöntemi Seçin</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl">
+              {paymentStep === 'method' ? 'Ödeme Yöntemi Seçin' : 'Ödeme Detayları'}
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-lg">
-              Toplam: <span className="font-semibold text-foreground">${total.toFixed(2)}</span>
+              Toplam: <span className="font-semibold text-foreground">₺{total.toFixed(2)}</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <Button variant="outline" className="h-24 flex flex-col gap-2 bg-transparent" onClick={() => completeOrder('cash')}>
-              <Banknote className="w-8 h-8" />
-              <span className="text-lg">Nakit</span>
-            </Button>
-            <Button variant="outline" className="h-24 flex flex-col gap-2 bg-transparent" onClick={() => completeOrder('card')}>
-              <CreditCard className="w-8 h-8" />
-              <span className="text-lg">Kredi Kartı</span>
-            </Button>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
-          </AlertDialogFooter>
+
+          {paymentStep === 'method' ? (
+            <>
+              <ScrollArea className="flex-1 max-h-[400px]">
+                <div className="space-y-4 pr-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium">Ödenecek Ürünleri Seçin</h3>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={selectAllItems}>
+                        Tümünü Seç
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={deselectAllItems}>
+                        Temizle
+                      </Button>
+                    </div>
+                  </div>
+
+                  {cart.map((item) => (
+                    <div
+                      key={getItemKey(item)}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 cursor-pointer"
+                      onClick={() => toggleItemSelection(item)}
+                    >
+                      <Checkbox
+                        checked={selectedItems.has(getItemKey(item))}
+                        onCheckedChange={() => toggleItemSelection(item)}
+                      />
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        {item.productImage ? (
+                          <Image
+                            src={item.productImage || "/placeholder.svg"}
+                            alt={item.productName}
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            {item.isMenu ? (
+                              <Package className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium">{item.productName}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {item.quantity}x ₺{item.unitPrice.toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="font-semibold">₺{item.totalPrice.toFixed(2)}</div>
+                    </div>
+                  ))}
+
+                  <div className="border-t pt-4 mt-4">
+                    <div className="flex justify-between text-lg font-semibold">
+                      <span>Seçili Ürünler Toplamı</span>
+                      <span className="text-primary">₺{selectedTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+
+              <div className="grid grid-cols-3 gap-4 py-4">
+                <Button
+                  variant="outline"
+                  className="h-24 flex flex-col gap-2"
+                  onClick={() => handlePaymentMethodSelect('cash')}
+                  disabled={selectedItems.size === 0}
+                >
+                  <Banknote className="w-8 h-8" />
+                  <span className="text-lg">Nakit</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-24 flex flex-col gap-2"
+                  onClick={() => handlePaymentMethodSelect('card')}
+                  disabled={selectedItems.size === 0}
+                >
+                  <CreditCard className="w-8 h-8" />
+                  <span className="text-lg">Kredi Kartı</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-24 flex flex-col gap-2"
+                  onClick={() => handlePaymentMethodSelect('mixed')}
+                  disabled={selectedItems.size === 0}
+                >
+                  <Wallet className="w-8 h-8" />
+                  <span className="text-lg">Karma</span>
+                </Button>
+              </div>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel>İptal</AlertDialogCancel>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <div className="space-y-4 py-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <div className="flex justify-between text-lg font-semibold mb-2">
+                    <span>Ödenecek Tutar</span>
+                    <span className="text-primary">₺{selectedTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {selectedItems.size} ürün seçildi
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Nakit Ödeme</label>
+                    <div className="relative">
+                      <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={cashAmount}
+                        onChange={(e) => setCashAmount(e.target.value)}
+                        className="pl-10 h-12 text-lg"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Kredi Kartı Ödeme</label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={cardAmount}
+                        onChange={(e) => setCardAmount(e.target.value)}
+                        className="pl-10 h-12 text-lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-muted rounded-lg space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Nakit</span>
+                    <span className="font-medium">₺{(parseFloat(cashAmount) || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Kredi Kartı</span>
+                    <span className="font-medium">₺{(parseFloat(cardAmount) || 0).toFixed(2)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between font-semibold">
+                    <span>Kalan</span>
+                    <span className={remainingAmount > 0.01 ? 'text-destructive' : 'text-green-600'}>
+                      ₺{remainingAmount.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setPaymentStep('method')}>Geri</AlertDialogCancel>
+                <Button
+                  onClick={() => completeOrder('mixed', selectedItems.size < cart.length)}
+                  disabled={Math.abs(remainingAmount) > 0.01}
+                >
+                  Ödemeyi Tamamla
+                </Button>
+              </AlertDialogFooter>
+            </>
+          )}
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Success Dialog */}
-      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl text-center">Sipariş Tamamlandı!</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-lg">Ödeme başarıyla alındı.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="justify-center">
-            <AlertDialogAction className="px-8">Kapat</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  )
-}
+      {

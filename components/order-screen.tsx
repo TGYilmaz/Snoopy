@@ -69,21 +69,7 @@ export function OrderScreen() {
       }
       return [
         ...prev,
-        {/* Success Dialog */}
-      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl text-center">Sipariş Tamamlandı!</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-lg">Ödeme başarıyla alındı.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="justify-center">
-            <AlertDialogAction className="px-8">Kapat</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  )
-}
+        {
           productId: product.id,
           productName: product.name,
           productImage: product.image,
@@ -718,4 +704,18 @@ export function OrderScreen() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {
+      {/* Success Dialog */}
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl text-center">Sipariş Tamamlandı!</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-lg">Ödeme başarıyla alındı.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="justify-center">
+            <AlertDialogAction className="px-8">Kapat</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}

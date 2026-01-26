@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -32,7 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { CreditCard, Banknote, Search, Receipt, MoreVertical, Pencil, Trash2, XCircle, Plus, Minus } from 'lucide-react'
+import { CreditCard, Banknote, Search, Receipt, MoreVertical, Pencil, Trash2, XCircle, Plus, Minus, Wallet } from 'lucide-react'
 import { Order, OrderItem } from '@/lib/pos-types'
 import { getOrders, updateOrder, deleteOrder } from '@/lib/pos-store'
 
@@ -45,9 +44,9 @@ export function OrderHistory() {
   const [editItems, setEditItems] = useState<OrderItem[]>([])
 
   const loadOrders = useCallback(async () => {
-  const ordersData = await getOrders()
-  setOrders(ordersData)
-}, [])
+    const ordersData = await getOrders()
+    setOrders(ordersData)
+  }, [])
 
   useEffect(() => {
     loadOrders()
@@ -69,21 +68,21 @@ export function OrderHistory() {
   }
 
   const handleDeleteOrder = async () => {
-  if (orderToDelete) {
-    await deleteOrder(orderToDelete.id)
-    await loadOrders()
-    setOrderToDelete(null)
+    if (orderToDelete) {
+      await deleteOrder(orderToDelete.id)
+      await loadOrders()
+      setOrderToDelete(null)
+    }
   }
-}
 
   const handleCancelOrder = async () => {
-  if (orderToCancel) {
-    const updated: Order = { ...orderToCancel, status: 'cancelled' }
-    await updateOrder(updated)
-    await loadOrders()
-    setOrderToCancel(null)
+    if (orderToCancel) {
+      const updated: Order = { ...orderToCancel, status: 'cancelled' }
+      await updateOrder(updated)
+      await loadOrders()
+      setOrderToCancel(null)
+    }
   }
-}
 
   const openEditDialog = (order: Order) => {
     setOrderToEdit(order)
@@ -107,20 +106,48 @@ export function OrderHistory() {
   }
 
   const handleSaveEdit = async () => {
-  if (orderToEdit && editItems.length > 0) {
-    const newTotal = editItems.reduce((sum, item) => sum + item.totalPrice, 0)
-    const updated: Order = {
-      ...orderToEdit,
-      items: editItems,
-      total: newTotal,
+    if (orderToEdit && editItems.length > 0) {
+      const newTotal = editItems.reduce((sum, item) => sum + item.totalPrice, 0)
+      const updated: Order = {
+        ...orderToEdit,
+        items: editItems,
+        total: newTotal,
+      }
+      await updateOrder(updated)
+      await loadOrders()
+      setOrderToEdit(null)
     }
-    await updateOrder(updated)
-    await loadOrders()
-    setOrderToEdit(null)
   }
-}
 
   const editTotal = editItems.reduce((sum, item) => sum + item.totalPrice, 0)
+
+  // Ödeme ikonunu getir
+  const getPaymentIcon = (order: Order) => {
+    if (order.paymentMethod === 'cash') {
+      return <Banknote className="w-5 h-5 text-green-600" />
+    } else if (order.paymentMethod === 'card') {
+      return <CreditCard className="w-5 h-5 text-blue-600" />
+    } else if (order.paymentMethod === 'mixed') {
+      return <Wallet className="w-5 h-5 text-purple-600" />
+    }
+  }
+
+  // Ödeme detaylarını formatla
+  const getPaymentDetails = (order: Order) => {
+    if (order.paymentMethod === 'cash') {
+      return 'Nakit'
+    } else if (order.paymentMethod === 'card') {
+      return 'Kredi Kartı'
+    } else if (order.paymentMethod === 'mixed' && order.payments) {
+      const cash = order.payments.find(p => p.method === 'cash')
+      const card = order.payments.find(p => p.method === 'card')
+      const parts = []
+      if (cash) parts.push(`₺${cash.amount.toFixed(2)} Nakit`)
+      if (card) parts.push(`₺${card.amount.toFixed(2)} Kart`)
+      return parts.join(' + ')
+    }
+    return 'Bilinmiyor'
+  }
 
   return (
     <div className="h-full flex flex-col gap-6">
@@ -164,22 +191,28 @@ export function OrderHistory() {
                         Sipariş #{order.id.slice(-6).toUpperCase()}
                       </span>
                       <Badge
-                        variant={order.status === 'tamamlandı' ? 'default' : 'İptal Edildi'}
+                        variant={order.status === 'completed' ? 'default' : 'destructive'}
                       >
-                        {order.status}
+                        {order.status === 'completed' ? 'Tamamlandı' : 'İptal Edildi'}
                       </Badge>
+                      {order.paymentMethod === 'mixed' && (
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                          Karma Ödeme
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {formatDate(order.createdAt)}
                     </div>
+                    {order.paymentMethod === 'mixed' && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {getPaymentDetails(order)}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      {order.paymentMethod === 'cash' ? (
-                        <Banknote className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <CreditCard className="w-5 h-5 text-blue-600" />
-                      )}
+                      {getPaymentIcon(order)}
                       <span className="text-lg font-semibold text-card-foreground">
                         ₺{order.total.toFixed(2)}
                       </span>
@@ -195,7 +228,7 @@ export function OrderHistory() {
                           <Pencil className="w-4 h-4 mr-2" />
                           Siparişi Düzenle
                         </DropdownMenuItem>
-                        {order.status === 'tamamlandı' && (
+                        {order.status === 'completed' && (
                           <DropdownMenuItem onClick={() => setOrderToCancel(order)}>
                             <XCircle className="w-4 h-4 mr-2" />
                             Siparişi İptal Et
@@ -234,10 +267,10 @@ export function OrderHistory() {
       <AlertDialog open={!!orderToDelete} onOpenChange={() => setOrderToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-           <AlertDialogTitle>Sipariş Silinsin mi?</AlertDialogTitle>
-<AlertDialogDescription>
-  #{orderToDelete?.id.slice(-6).toUpperCase()} numaralı sipariş kalıcı olarak silinecektir. Bu işlem geri alınamaz.
-</AlertDialogDescription>
+            <AlertDialogTitle>Sipariş Silinsin mi?</AlertDialogTitle>
+            <AlertDialogDescription>
+              #{orderToDelete?.id.slice(-6).toUpperCase()} numaralı sipariş kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Vazgeç</AlertDialogCancel>
@@ -254,9 +287,9 @@ export function OrderHistory() {
           <AlertDialogHeader>
             <AlertDialogTitle>Sipariş İptal Edilsin Mi?</AlertDialogTitle>
             <AlertDialogDescription>
-  #{orderToCancel?.id.slice(-6).toUpperCase()} numaralı sipariş iptal edilecektir. 
-  Sipariş geçmişte görünmeye devam eder.
-</AlertDialogDescription>
+              #{orderToCancel?.id.slice(-6).toUpperCase()} numaralı sipariş iptal edilecektir. 
+              Sipariş geçmişte görünmeye devam eder.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Geri Dön</AlertDialogCancel>
@@ -280,8 +313,9 @@ export function OrderHistory() {
                     {item.productName}
                     {item.isMenu && <Badge variant="outline" className="ml-1 text-[10px]">Menu</Badge>}
                   </div>
-                  <div className="text-sm text-muted-foreground">₺
-                    {item.unitPrice.toFixed(2)} adet fiyatı</div>
+                  <div className="text-sm text-muted-foreground">
+                    ₺{item.unitPrice.toFixed(2)} adet fiyatı
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -314,7 +348,7 @@ export function OrderHistory() {
           <Separator />
           <div className="flex justify-between text-lg font-semibold">
             <span>Toplam</span>
-            <span>${editTotal.toFixed(2)}</span>
+            <span>₺{editTotal.toFixed(2)}</span>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOrderToEdit(null)} className="bg-transparent">

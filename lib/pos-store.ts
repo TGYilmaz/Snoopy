@@ -201,6 +201,7 @@ export async function getOrders(): Promise<Order[]> {
       items: o.items || [],
       total: o.total,
       paymentMethod: o.payment_method,
+      payments: o.payments || undefined, // Karma ödeme detayları
       status: o.status,
       createdAt: o.created_at,
     }))
@@ -219,6 +220,7 @@ export async function saveOrder(order: Order): Promise<void> {
         items: order.items,
         total: order.total,
         payment_method: order.paymentMethod,
+        payments: order.payments || null, // Karma ödeme detaylarını kaydet
         status: order.status,
         created_at: order.createdAt,
       })
@@ -237,6 +239,7 @@ export async function updateOrder(order: Order): Promise<void> {
         items: order.items,
         total: order.total,
         payment_method: order.paymentMethod,
+        payments: order.payments || null, // Karma ödeme detaylarını güncelle
         status: order.status,
       })
       .eq('id', order.id)
@@ -279,6 +282,7 @@ export async function getOrdersByDate(date: string): Promise<Order[]> {
       items: o.items || [],
       total: o.total,
       paymentMethod: o.payment_method,
+      payments: o.payments || undefined, // Karma ödeme detayları
       status: o.status,
       createdAt: o.created_at,
     }))
@@ -360,8 +364,27 @@ export async function getTodayReport() {
   const cancelled = orders.filter(o => o.status === 'cancelled')
   
   const totalRevenue = completed.reduce((sum, o) => sum + o.total, 0)
-  const cashRevenue = completed.filter(o => o.paymentMethod === 'cash').reduce((sum, o) => sum + o.total, 0)
-  const cardRevenue = completed.filter(o => o.paymentMethod === 'card').reduce((sum, o) => sum + o.total, 0)
+  
+  // Karma ödeme desteği ile gelir hesaplama
+  let cashRevenue = 0
+  let cardRevenue = 0
+
+  for (const order of completed) {
+    if (order.paymentMethod === 'cash') {
+      cashRevenue += order.total
+    } else if (order.paymentMethod === 'card') {
+      cardRevenue += order.total
+    } else if (order.paymentMethod === 'mixed' && order.payments) {
+      // Karma ödemede her ödeme tipini ayrı hesapla
+      for (const payment of order.payments) {
+        if (payment.method === 'cash') {
+          cashRevenue += payment.amount
+        } else if (payment.method === 'card') {
+          cardRevenue += payment.amount
+        }
+      }
+    }
+  }
   
   return {
     date: today,
@@ -389,8 +412,27 @@ export async function getDailyReports() {
     const cancelled = orders.filter(o => o.status === 'cancelled')
     
     const totalRevenue = completed.reduce((sum, o) => sum + o.total, 0)
-    const cashRevenue = completed.filter(o => o.paymentMethod === 'cash').reduce((sum, o) => sum + o.total, 0)
-    const cardRevenue = completed.filter(o => o.paymentMethod === 'card').reduce((sum, o) => sum + o.total, 0)
+    
+    // Karma ödeme desteği ile gelir hesaplama
+    let cashRevenue = 0
+    let cardRevenue = 0
+
+    for (const order of completed) {
+      if (order.paymentMethod === 'cash') {
+        cashRevenue += order.total
+      } else if (order.paymentMethod === 'card') {
+        cardRevenue += order.total
+      } else if (order.paymentMethod === 'mixed' && order.payments) {
+        // Karma ödemede her ödeme tipini ayrı hesapla
+        for (const payment of order.payments) {
+          if (payment.method === 'cash') {
+            cashRevenue += payment.amount
+          } else if (payment.method === 'card') {
+            cardRevenue += payment.amount
+          }
+        }
+      }
+    }
     
     if (orders.length > 0) {
       reports.push({

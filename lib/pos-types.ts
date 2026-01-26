@@ -44,11 +44,19 @@ export interface OrderItem {
   isMenu?: boolean
 }
 
+// Yeni eklenen interface
+export interface PaymentDetail {
+  method: 'cash' | 'card'
+  amount: number
+}
+
+// Güncellenmiş Order interface
 export interface Order {
   id: string
   items: OrderItem[]
   total: number
-  paymentMethod: 'cash' | 'card'
+  paymentMethod: 'cash' | 'card' | 'mixed' // mixed eklendi
+  payments?: PaymentDetail[] // Opsiyonel: Çoklu ödeme detayları
   status: 'completed' | 'cancelled'
   createdAt: string
 }

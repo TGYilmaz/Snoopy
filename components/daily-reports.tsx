@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { DollarSign, CreditCard, Banknote, Calendar, TrendingUp, ShoppingBag, Award } from 'lucide-react'
+import { DollarSign, CreditCard, Banknote, Calendar, TrendingUp, ShoppingBag, Award, Wallet } from 'lucide-react'
 import { Order } from '@/lib/pos-types'
 import { getOrders } from '@/lib/pos-store'
 
@@ -24,13 +24,14 @@ export function DailyReports() {
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0])
 
   useEffect(() => {
-  loadOrders()
-}, [])
+    loadOrders()
+  }, [])
 
-const loadOrders = async () => {
-  const ordersData = await getOrders()
-  setOrders(ordersData)
-}
+  const loadOrders = async () => {
+    const ordersData = await getOrders()
+    setOrders(ordersData)
+  }
+
   const filteredOrders = useMemo(() => {
     if (dateMode === 'single') {
       return orders.filter(order => order.createdAt.startsWith(singleDate))
@@ -46,10 +47,31 @@ const loadOrders = async () => {
     const cancelledOrders = filteredOrders.filter(o => o.status === 'cancelled')
     
     const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0)
-    const cashRevenue = completedOrders.filter(o => o.paymentMethod === 'cash').reduce((sum, o) => sum + o.total, 0)
-    const cardRevenue = completedOrders.filter(o => o.paymentMethod === 'card').reduce((sum, o) => sum + o.total, 0)
+    
+    // Karma ödeme desteği ile gelir hesaplama
+    let cashRevenue = 0
+    let cardRevenue = 0
+    let mixedPaymentCount = 0
 
-    // Calculate best selling product
+    for (const order of completedOrders) {
+      if (order.paymentMethod === 'cash') {
+        cashRevenue += order.total
+      } else if (order.paymentMethod === 'card') {
+        cardRevenue += order.total
+      } else if (order.paymentMethod === 'mixed' && order.payments) {
+        // Karma ödemede her ödeme tipini ayrı hesapla
+        mixedPaymentCount++
+        for (const payment of order.payments) {
+          if (payment.method === 'cash') {
+            cashRevenue += payment.amount
+          } else if (payment.method === 'card') {
+            cardRevenue += payment.amount
+          }
+        }
+      }
+    }
+
+    // En çok satan ürün hesaplama
     const productSales: Record<string, { name: string; quantity: number; revenue: number }> = {}
     
     for (const order of completedOrders) {
@@ -72,6 +94,7 @@ const loadOrders = async () => {
       totalRevenue,
       cashRevenue,
       cardRevenue,
+      mixedPaymentCount,
       averageOrder: completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0,
       bestSeller,
       topProducts: sortedProducts.slice(0, 5),
@@ -212,7 +235,7 @@ const loadOrders = async () => {
       <ScrollArea className="flex-1">
         <div className="space-y-6 pr-4">
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <DollarSign className="w-5 h-5" />
@@ -233,7 +256,7 @@ const loadOrders = async () => {
               </div>
               {stats.cancelledOrders > 0 && (
                 <div className="text-sm text-destructive mt-1">
-                  {stats.cancelledOrders} cancelled
+                  {stats.cancelledOrders} iptal edildi
                 </div>
               )}
             </Card>
@@ -246,6 +269,9 @@ const loadOrders = async () => {
               <div className="text-2xl font-bold text-foreground">
                 ₺{stats.cashRevenue.toFixed(2)}
               </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {((stats.cashRevenue / stats.totalRevenue) * 100 || 0).toFixed(1)}% toplam
+              </div>
             </Card>
 
             <Card className="p-4">
@@ -256,7 +282,25 @@ const loadOrders = async () => {
               <div className="text-2xl font-bold text-foreground">
                 ₺{stats.cardRevenue.toFixed(2)}
               </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {((stats.cardRevenue / stats.totalRevenue) * 100 || 0).toFixed(1)}% toplam
+              </div>
             </Card>
+
+            {stats.mixedPaymentCount > 0 && (
+              <Card className="p-4 border-dashed">
+                <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                  <Wallet className="w-5 h-5 text-purple-600" />
+                  <span className="text-sm">Karma Ödeme</span>
+                </div>
+                <div className="text-2xl font-bold text-foreground">
+                  {stats.mixedPaymentCount}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  sipariş
+                </div>
+              </Card>
+            )}
 
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">

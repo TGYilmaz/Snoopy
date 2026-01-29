@@ -7,6 +7,7 @@ import {
   recipeService,
   accountTransactionService,
 } from './supabase-services';
+import { OrderItem } from './pos-types';
 
 /**
  * Sipariş oluşturulduğunda stok ve cari işlemlerini yönetir
@@ -20,12 +21,7 @@ export async function processOrderWithIntegration({
   isCredit,
 }: {
   orderId: string;
-  items: Array<{
-    product_id: string;
-    quantity: number;
-    price: number;
-    has_recipe?: boolean;
-  }>;
+  items: OrderItem[];
   totalAmount: number;
   paymentMethod: 'cash' | 'card' | 'mixed' | 'credit';
   accountId?: string;
@@ -34,23 +30,28 @@ export async function processOrderWithIntegration({
   try {
     // 1. STOK VE REÇETE İŞLEMLERİ
     for (const item of items) {
+      // Menü kontrolü - menüleri atla
+      if (item.isMenu) {
+        continue;
+      }
+
       // Reçete varsa hammaddeleri düş
-      const recipe = await recipeService.getByProductId(item.product_id);
+      const recipe = await recipeService.getByProductId(item.productId);
       
       if (recipe && recipe.recipe_items) {
         // Reçete bazlı stok düşümü
         await recipeService.processRecipe(
-          item.product_id,
+          item.productId,
           item.quantity,
           orderId
         );
       } else {
         // Direkt stok düşümü (reçete yok)
         await stockMovementService.create({
-          stock_id: item.product_id,
+          stock_id: item.productId,
           movement_type: 'sale',
           quantity: item.quantity,
-          unit_price: item.price,
+          unit_price: item.unitPrice,
           reference_type: 'order',
           reference_id: orderId,
           notes: 'Satış',
@@ -96,20 +97,22 @@ export async function processOrderWithIntegration({
 /**
  * Sipariş oluşturmadan önce stok kontrolü yapar
  */
-export async function checkStockAvailability(items: Array<{
-  product_id: string;
-  quantity: number;
-}>) {
+export async function checkStockAvailability(items: OrderItem[]) {
   const unavailableItems: Array<{
     product_id: string;
     product_name: string;
-    required: number;
+    requested: number;
     available: number;
   }> = [];
 
   for (const item of items) {
+    // Menü kontrolü - menüleri atla
+    if (item.isMenu) {
+      continue;
+    }
+
     // Önce reçete kontrolü
-    const recipe = await recipeService.getByProductId(item.product_id);
+    const recipe = await recipeService.getByProductId(item.productId);
     
     if (recipe && recipe.recipe_items) {
       // Reçeteli ürün - hammadde kontrolü
@@ -125,8 +128,8 @@ export async function checkStockAvailability(items: Array<{
         if (stock && stock.current_quantity < requiredQuantity) {
           unavailableItems.push({
             product_id: recipeItem.material_id,
-            product_name: `${stock.name} (${item.product_id} için gerekli)`,
-            required: requiredQuantity,
+            product_name: `${stock.name} (${item.productName} için gerekli)`,
+            requested: requiredQuantity,
             available: stock.current_quantity,
           });
         }
@@ -136,14 +139,14 @@ export async function checkStockAvailability(items: Array<{
       const { data: stock } = await supabase
         .from('stocks')
         .select('*')
-        .eq('id', item.product_id)
+        .eq('id', item.productId)
         .single();
 
       if (stock && stock.current_quantity < item.quantity) {
         unavailableItems.push({
-          product_id: item.product_id,
-          product_name: stock.name,
-          required: item.quantity,
+          product_id: item.productId,
+          product_name: stock.name || item.productName,
+          requested: item.quantity,
           available: stock.current_quantity,
         });
       }

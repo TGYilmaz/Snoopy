@@ -25,6 +25,9 @@ import { getShopSettings, saveShopSettings } from '@/lib/pos-store'
 const navItems = [
   { href: '/', label: 'Siparişler', icon: ShoppingCart },
   { href: '/products', label: 'Ürünler', icon: Package },
+  { href: '/stocks', label: 'Stok', icon: Package },
+  { href: '/recipes', label: 'Reçeteler', icon: ChefHat },
+  { href: '/accounts', label: 'Cari Hesaplar', icon: Users },
   { href: '/history', label: 'Geçmiş', icon: History },
   { href: '/reports', label: 'Gün Sonu', icon: BarChart3 },
 ]

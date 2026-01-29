@@ -253,6 +253,7 @@ export function OrderScreen() {
     setIsProcessing(true)
     
     try {
+      const { processOrderWithIntegration } = await import('@/lib/order-integration')
       const cash = parseFloat(cashAmount) || 0
       const card = parseFloat(cardAmount) || 0
       

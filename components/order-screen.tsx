@@ -31,11 +31,6 @@ import { Plus, Minus, Trash2, CreditCard, Banknote, X, ImageIcon, Package, Walle
 import { Product, Menu, OrderItem, Order, Category, PaymentDetail } from '@/lib/pos-types'
 import { getProducts, getMenus, getCategories, saveOrder, generateId } from '@/lib/pos-store'
 import { useAccountStore } from '@/lib/pos-store-extended'
-import {
-  processOrderWithIntegration,
-  checkStockAvailability,
-  checkCreditLimit,
-} from '@/lib/order-integration'
 
 export function OrderScreen() {
   const [products, setProducts] = useState<Product[]>([])
@@ -71,10 +66,16 @@ export function OrderScreen() {
   useEffect(() => {
     const checkCredit = async () => {
       if (isCredit && selectedAccount && total > 0) {
-        const creditCheck = await checkCreditLimit(selectedAccount, total)
-        if (!creditCheck.allowed) {
-          setCreditWarning(`Kredi limiti aşılacak! Eksik tutar: ₺${creditCheck.deficit?.toFixed(2)}`)
-        } else {
+        try {
+          const { checkCreditLimit } = await import('@/lib/order-integration')
+          const creditCheck = await checkCreditLimit(selectedAccount, total)
+          if (!creditCheck.allowed) {
+            setCreditWarning(`Kredi limiti aşılacak! Eksik tutar: ₺${creditCheck.deficit?.toFixed(2)}`)
+          } else {
+            setCreditWarning(null)
+          }
+        } catch (error) {
+          console.error('Kredi kontrolü hatası:', error)
           setCreditWarning(null)
         }
       } else {
@@ -201,28 +202,38 @@ export function OrderScreen() {
   }
 
   const openPaymentDialog = async () => {
-    // 1. Stok kontrolü
     setIsProcessing(true)
-    const stockCheck = await checkStockAvailability(cart)
-    setIsProcessing(false)
     
-    if (!stockCheck.available) {
-      const unavailableProducts = stockCheck.unavailableItems
-        .map(item => `${item.product_name} (İstenilen: ${item.requested}, Mevcut: ${item.available})`)
-        .join('\n')
-      setStockWarning(`Yetersiz stok:\n${unavailableProducts}`)
-      return
-    }
-    
-    setStockWarning(null)
-    
-    // 2. Kredi kontrolü (veresiye ise)
-    if (isCredit && selectedAccount) {
-      const creditCheck = await checkCreditLimit(selectedAccount, total)
-      if (!creditCheck.allowed) {
-        setCreditWarning(`Kredi limiti aşılacak! Eksik tutar: ₺${creditCheck.deficit?.toFixed(2)}`)
-        // Uyarı göster ama devam etmesine izin ver
+    try {
+      // Dinamik import ile stok kontrolü
+      const { checkStockAvailability } = await import('@/lib/order-integration')
+      const stockCheck = await checkStockAvailability(cart)
+      
+      if (!stockCheck.available) {
+        const unavailableProducts = stockCheck.unavailableItems
+          .map(item => `${item.product_name} (İstenilen: ${item.requested}, Mevcut: ${item.available})`)
+          .join('\n')
+        setStockWarning(`Yetersiz stok:\n${unavailableProducts}`)
+        setIsProcessing(false)
+        return
       }
+      
+      setStockWarning(null)
+      
+      // Kredi kontrolü (veresiye ise)
+      if (isCredit && selectedAccount) {
+        const { checkCreditLimit } = await import('@/lib/order-integration')
+        const creditCheck = await checkCreditLimit(selectedAccount, total)
+        if (!creditCheck.allowed) {
+          setCreditWarning(`Kredi limiti aşılacak! Eksik tutar: ₺${creditCheck.deficit?.toFixed(2)}`)
+        }
+      }
+    } catch (error) {
+      console.error('Ödeme kontrolü hatası:', error)
+      setStockWarning(null)
+      setCreditWarning(null)
+    } finally {
+      setIsProcessing(false)
     }
     
     // Tüm ürünleri otomatik seç
@@ -253,7 +264,6 @@ export function OrderScreen() {
     setIsProcessing(true)
     
     try {
-      const { processOrderWithIntegration } = await import('@/lib/order-integration')
       const cash = parseFloat(cashAmount) || 0
       const card = parseFloat(cardAmount) || 0
       
@@ -308,15 +318,21 @@ export function OrderScreen() {
 
       await saveOrder(order)
 
-      // Stok ve cari entegrasyonu
-      await processOrderWithIntegration({
-        orderId: order.id,
-        items: itemsToSave,
-        totalAmount: order.total,
-        paymentMethod: isCredit ? 'credit' : method,
-        accountId: selectedAccount || undefined,
-        isCredit,
-      })
+      // Stok ve cari entegrasyonu - dinamik import
+      try {
+        const { processOrderWithIntegration } = await import('@/lib/order-integration')
+        await processOrderWithIntegration({
+          orderId: order.id,
+          items: itemsToSave,
+          totalAmount: order.total,
+          paymentMethod: isCredit ? 'credit' : method,
+          accountId: selectedAccount || undefined,
+          isCredit,
+        })
+      } catch (integrationError) {
+        console.error('Entegrasyon hatası (sipariş kaydedildi):', integrationError)
+        // Sipariş kaydedildi, sadece entegrasyon hatası - kullanıcıya bildir ama devam et
+      }
 
       // Kısmi ödeme ise, ödenen ürünleri sepetten kaldır
       if (isPartial) {

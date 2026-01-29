@@ -1,13 +1,6 @@
 // lib/order-integration.ts
-// Mevcut sipariş sisteminize eklenecek entegrasyon fonksiyonları
-
 import { supabase } from './supabase';
-import {
-  stockMovementService,
-  recipeService,
-  accountTransactionService,
-} from './supabase-services';
-import { OrderItem } from './pos-types';
+import type { OrderItem } from './pos-types';
 
 /**
  * Sipariş oluşturulduğunda stok ve cari işlemlerini yönetir
@@ -28,6 +21,9 @@ export async function processOrderWithIntegration({
   isCredit?: boolean;
 }) {
   try {
+    // Dinamik import ile circular dependency önleniyor
+    const { stockMovementService, recipeService, accountTransactionService } = await import('./supabase-services');
+
     // 1. STOK VE REÇETE İŞLEMLERİ
     for (const item of items) {
       // Menü kontrolü - menüleri atla
@@ -38,7 +34,7 @@ export async function processOrderWithIntegration({
       // Reçete varsa hammaddeleri düş
       const recipe = await recipeService.getByProductId(item.productId);
       
-      if (recipe && recipe.recipe_items) {
+      if (recipe && recipe.recipe_items && recipe.recipe_items.length > 0) {
         // Reçete bazlı stok düşümü
         await recipeService.processRecipe(
           item.productId,
@@ -98,93 +94,141 @@ export async function processOrderWithIntegration({
  * Sipariş oluşturmadan önce stok kontrolü yapar
  */
 export async function checkStockAvailability(items: OrderItem[]) {
-  const unavailableItems: Array<{
-    product_id: string;
-    product_name: string;
-    requested: number;
-    available: number;
-  }> = [];
+  try {
+    // Dinamik import ile circular dependency önleniyor
+    const { recipeService } = await import('./supabase-services');
 
-  for (const item of items) {
-    // Menü kontrolü - menüleri atla
-    if (item.isMenu) {
-      continue;
-    }
+    const unavailableItems: Array<{
+      product_id: string;
+      product_name: string;
+      requested: number;
+      available: number;
+    }> = [];
 
-    // Önce reçete kontrolü
-    const recipe = await recipeService.getByProductId(item.productId);
-    
-    if (recipe && recipe.recipe_items) {
-      // Reçeteli ürün - hammadde kontrolü
-      for (const recipeItem of recipe.recipe_items) {
-        const requiredQuantity = recipeItem.quantity * item.quantity;
+    for (const item of items) {
+      // Menü kontrolü - menüleri atla
+      if (item.isMenu) {
+        continue;
+      }
+
+      try {
+        // Önce reçete kontrolü
+        const recipe = await recipeService.getByProductId(item.productId);
         
-        const { data: stock } = await supabase
-          .from('stocks')
-          .select('*')
-          .eq('id', recipeItem.material_id)
-          .single();
+        if (recipe && recipe.recipe_items && recipe.recipe_items.length > 0) {
+          // Reçeteli ürün - hammadde kontrolü
+          for (const recipeItem of recipe.recipe_items) {
+            const requiredQuantity = recipeItem.quantity * item.quantity;
+            
+            const { data: stock, error } = await supabase
+              .from('stocks')
+              .select('*')
+              .eq('id', recipeItem.material_id)
+              .single();
 
-        if (stock && stock.current_quantity < requiredQuantity) {
-          unavailableItems.push({
-            product_id: recipeItem.material_id,
-            product_name: `${stock.name} (${item.productName} için gerekli)`,
-            requested: requiredQuantity,
-            available: stock.current_quantity,
-          });
+            if (error) {
+              console.warn('Stok kontrolü hatası:', error);
+              continue;
+            }
+
+            if (stock && stock.current_quantity < requiredQuantity) {
+              unavailableItems.push({
+                product_id: recipeItem.material_id,
+                product_name: `${stock.name} (${item.productName} için gerekli)`,
+                requested: requiredQuantity,
+                available: stock.current_quantity,
+              });
+            }
+          }
+        } else {
+          // Reçetesiz ürün - direkt stok kontrolü
+          const { data: stock, error } = await supabase
+            .from('stocks')
+            .select('*')
+            .eq('id', item.productId)
+            .maybeSingle();
+
+          if (error) {
+            console.warn('Stok kontrolü hatası:', error);
+            continue;
+          }
+
+          if (stock && stock.current_quantity < item.quantity) {
+            unavailableItems.push({
+              product_id: item.productId,
+              product_name: stock.name || item.productName,
+              requested: item.quantity,
+              available: stock.current_quantity,
+            });
+          }
         }
-      }
-    } else {
-      // Reçetesiz ürün - direkt stok kontrolü
-      const { data: stock } = await supabase
-        .from('stocks')
-        .select('*')
-        .eq('id', item.productId)
-        .single();
-
-      if (stock && stock.current_quantity < item.quantity) {
-        unavailableItems.push({
-          product_id: item.productId,
-          product_name: stock.name || item.productName,
-          requested: item.quantity,
-          available: stock.current_quantity,
-        });
+      } catch (itemError) {
+        console.warn(`Ürün kontrolü hatası (${item.productName}):`, itemError);
+        continue;
       }
     }
-  }
 
-  return {
-    available: unavailableItems.length === 0,
-    unavailableItems,
-  };
+    return {
+      available: unavailableItems.length === 0,
+      unavailableItems,
+    };
+  } catch (error) {
+    console.error('Stok kontrolü genel hatası:', error);
+    return {
+      available: true, // Hata durumunda işleme devam et
+      unavailableItems: [],
+    };
+  }
 }
 
 /**
  * Cari hesap kredi limiti kontrolü
  */
 export async function checkCreditLimit(accountId: string, amount: number) {
-  const { data: account } = await supabase
-    .from('accounts')
-    .select('*')
-    .eq('id', accountId)
-    .single();
+  try {
+    const { data: account, error } = await supabase
+      .from('accounts')
+      .select('*')
+      .eq('id', accountId)
+      .single();
 
-  if (!account) {
-    throw new Error('Cari hesap bulunamadı');
+    if (error || !account) {
+      console.warn('Cari hesap bulunamadı:', error);
+      return {
+        allowed: true, // Hesap bulunamazsa işleme izin ver
+        currentBalance: 0,
+        creditLimit: 0,
+        availableCredit: 0,
+        requiredAmount: amount,
+        newBalance: -amount,
+        deficit: 0,
+      };
+    }
+
+    const newBalance = account.balance - amount; // Borç artacak
+    const availableCredit = account.credit_limit - Math.abs(account.balance);
+
+    return {
+      allowed: Math.abs(newBalance) <= account.credit_limit,
+      currentBalance: account.balance,
+      creditLimit: account.credit_limit,
+      availableCredit,
+      requiredAmount: amount,
+      newBalance,
+      deficit: Math.max(0, Math.abs(newBalance) - account.credit_limit),
+    };
+  } catch (error) {
+    console.error('Kredi limiti kontrolü hatası:', error);
+    return {
+      allowed: true, // Hata durumunda işleme izin ver
+      currentBalance: 0,
+      creditLimit: 0,
+      availableCredit: 0,
+      requiredAmount: amount,
+      newBalance: -amount,
+      deficit: 0,
+    };
   }
-
-  const newBalance = account.balance - amount; // Borç artacak
-  const availableCredit = account.credit_limit - Math.abs(account.balance);
-
-  return {
-    allowed: Math.abs(newBalance) <= account.credit_limit,
-    currentBalance: account.balance,
-    creditLimit: account.credit_limit,
-    availableCredit,
-    requiredAmount: amount,
-    newBalance,
-    deficit: Math.max(0, Math.abs(newBalance) - account.credit_limit),
-  };
 }
 
 /**
@@ -192,6 +236,9 @@ export async function checkCreditLimit(accountId: string, amount: number) {
  */
 export async function reverseOrderIntegration(orderId: string) {
   try {
+    // Dinamik import ile circular dependency önleniyor
+    const { stockMovementService, accountTransactionService } = await import('./supabase-services');
+
     // 1. Stok hareketlerini geri al
     const { data: movements } = await supabase
       .from('stock_movements')
@@ -199,7 +246,7 @@ export async function reverseOrderIntegration(orderId: string) {
       .eq('reference_type', 'order')
       .eq('reference_id', orderId);
 
-    if (movements) {
+    if (movements && movements.length > 0) {
       for (const movement of movements) {
         // Ters hareket oluştur
         await stockMovementService.create({
@@ -220,12 +267,12 @@ export async function reverseOrderIntegration(orderId: string) {
       .eq('reference_type', 'order')
       .eq('reference_id', orderId);
 
-    if (transactions) {
+    if (transactions && transactions.length > 0) {
       for (const transaction of transactions) {
         // Ters hareket oluştur
         await accountTransactionService.create({
           account_id: transaction.account_id,
-          transaction_type: transaction.transaction_type === 'sale' ? 'adjustment' : 'adjustment',
+          transaction_type: 'adjustment',
           amount: -transaction.amount, // Negatif tutar ile düzeltme
           reference_type: 'order_reversal',
           reference_id: orderId,

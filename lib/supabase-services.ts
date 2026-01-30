@@ -1,5 +1,5 @@
 // lib/supabase-services.ts
-// Supabase CRUD işlemleri için servis fonksiyonları
+'use client';
 
 import { supabase } from './supabase';
 import type {
@@ -37,7 +37,7 @@ export const stockService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data as Stock[];
+    return (data || []) as Stock[];
   },
 
   // Tek stok getir
@@ -107,7 +107,7 @@ export const stockService = {
       .select('*');
 
     if (error) throw error;
-    return data as LowStockItem[];
+    return (data || []) as LowStockItem[];
   },
 };
 
@@ -130,7 +130,7 @@ export const stockMovementService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data as StockMovement[];
+    return (data || []) as StockMovement[];
   },
 
   // Yeni hareket ekle
@@ -153,7 +153,7 @@ export const stockMovementService = {
       .select('*, stock:stocks(*)');
 
     if (error) throw error;
-    return data as StockMovement[];
+    return (data || []) as StockMovement[];
   },
 };
 
@@ -178,7 +178,7 @@ export const recipeService = {
       .order('name');
 
     if (error) throw error;
-    return data as Recipe[];
+    return (data || []) as Recipe[];
   },
 
   // Ürüne göre reçete getir
@@ -195,13 +195,13 @@ export const recipeService = {
       `)
       .eq('product_id', productId)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      if (error.code === 'PGRST116') return null; // Reçete bulunamadı
+    if (error && error.code !== 'PGRST116') {
       throw error;
     }
-    return data as Recipe;
+    
+    return data as Recipe | null;
   },
 
   // Yeni reçete oluştur
@@ -289,7 +289,7 @@ export const recipeService = {
   async processRecipe(productId: string, quantity: number, orderId?: string) {
     // Reçeteyi getir
     const recipe = await this.getByProductId(productId);
-    if (!recipe || !recipe.recipe_items) {
+    if (!recipe || !recipe.recipe_items || recipe.recipe_items.length === 0) {
       throw new Error('Reçete bulunamadı');
     }
 
@@ -326,7 +326,7 @@ export const accountService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data as Account[];
+    return (data || []) as Account[];
   },
 
   // Özet bilgilerle getir
@@ -336,7 +336,7 @@ export const accountService = {
       .select('*');
 
     if (error) throw error;
-    return data as AccountSummary[];
+    return (data || []) as AccountSummary[];
   },
 
   // Tek cari hesap getir
@@ -433,7 +433,7 @@ export const accountTransactionService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data as AccountTransaction[];
+    return (data || []) as AccountTransaction[];
   },
 
   // Yeni hareket ekle
@@ -463,6 +463,6 @@ export const accountTransactionService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data as AccountTransaction[];
+    return (data || []) as AccountTransaction[];
   },
 };

@@ -30,7 +30,15 @@ import {
 import { Plus, Minus, Trash2, CreditCard, Banknote, X, ImageIcon, Package, Wallet, AlertTriangle, User } from 'lucide-react'
 import { Product, Menu, OrderItem, Order, Category, PaymentDetail } from '@/lib/pos-types'
 import { getProducts, getMenus, getCategories, saveOrder, generateId } from '@/lib/pos-store'
-import { useAccountStore } from '@/lib/pos-store-extended'
+
+// Account tipi tanımı
+interface Account {
+  id: string
+  name: string
+  account_type: 'customer' | 'supplier'
+  balance: number
+  credit_limit: number
+}
 
 export function OrderScreen() {
   const [products, setProducts] = useState<Product[]>([])
@@ -42,7 +50,7 @@ export function OrderScreen() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   
   // Cari hesap ve veresiye state'leri
-  const { accounts } = useAccountStore()
+  const [accounts, setAccounts] = useState<Account[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
   const [isCredit, setIsCredit] = useState(false)
   
@@ -60,6 +68,7 @@ export function OrderScreen() {
 
   useEffect(() => {
     loadData()
+    loadAccounts()
   }, [])
 
   // Cari hesap seçildiğinde veya toplam değiştiğinde kredi kontrolü
@@ -94,6 +103,18 @@ export function OrderScreen() {
     setProducts(productsData.filter((p) => p.active))
     setMenus(menusData.filter((m) => m.active))
     setCategories(categoriesData)
+  }
+
+  const loadAccounts = async () => {
+    try {
+      // Dinamik import ile store yükleniyor
+      const { useAccountStore } = await import('@/lib/pos-store-extended')
+      const store = useAccountStore.getState()
+      setAccounts(store.accounts)
+    } catch (error) {
+      console.error('Cari hesaplar yüklenemedi:', error)
+      setAccounts([])
+    }
   }
 
   const getProductById = (id: string) => products.find((p) => p.id === id)

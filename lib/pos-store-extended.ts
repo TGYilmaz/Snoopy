@@ -2,7 +2,7 @@
 // Mevcut pos-store.ts dosyanıza eklenecek store slice'ları
 
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import type {
   Stock,
   StockMovement,

@@ -45,7 +45,9 @@ import {
   Edit,
   Trash2,
   CreditCard,
+  Home,
 } from 'lucide-react';
+import Link from 'next/link';
 import {
   ACCOUNT_TYPE_LABELS,
   TRANSACTION_TYPE_LABELS,
@@ -113,9 +115,16 @@ export default function AccountsPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Başlık */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Cari Hesap Yönetimi</h1>
-          <p className="text-muted-foreground">Müşteri ve tedarikçi takibi</p>
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="outline" size="icon">
+              <Home className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">Cari Hesap Yönetimi</h1>
+            <p className="text-muted-foreground">Müşteri ve tedarikçi takibi</p>
+          </div>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -347,15 +356,26 @@ function AccountForm({ onClose, account }: { onClose: () => void; account?: any 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validasyon
+    if (!formData.code || !formData.name) {
+      alert('Kod ve Ad alanları zorunludur');
+      return;
+    }
+
     try {
       if (account) {
         await updateAccount(account.id, formData);
       } else {
-        await addAccount(formData);
+        await addAccount({
+          ...formData,
+          balance: 0, // Yeni hesap için başlangıç bakiyesi 0
+        });
       }
       onClose();
     } catch (error) {
       console.error('Hata:', error);
+      alert('Kaydetme sırasında bir hata oluştu');
     }
   };
 
@@ -560,42 +580,54 @@ function AccountDetails({
               accountTransactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="flex flex-col gap-2 p-3 border rounded-lg"
                 >
-                  <div>
-                    <p className="font-medium">
-                      {TRANSACTION_TYPE_LABELS[transaction.transaction_type]}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(transaction.created_at), 'dd MMM yyyy HH:mm', {
-                        locale: tr,
-                      })}
-                    </p>
-                    {transaction.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {transaction.description}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">
+                        {TRANSACTION_TYPE_LABELS[transaction.transaction_type]}
                       </p>
-                    )}
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(transaction.created_at), 'dd MMM yyyy HH:mm', {
+                          locale: tr,
+                        })}
+                      </p>
+                      {transaction.description && (
+                        <p className="text-sm text-muted-foreground">
+                          {transaction.description}
+                        </p>
+                      )}
+                      {transaction.reference_id && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Sipariş No: #{transaction.reference_id.substring(0, 8)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className={`text-lg font-bold ${
+                          ['sale', 'receipt'].includes(transaction.transaction_type)
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
+                      >
+                        {['sale', 'receipt'].includes(transaction.transaction_type)
+                          ? '+'
+                          : '-'}
+                        ₺{transaction.amount.toFixed(2)}
+                      </p>
+                      {transaction.payment_method && (
+                        <Badge variant="outline" className="mt-1">
+                          {PAYMENT_METHOD_LABELS[transaction.payment_method as any]}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p
-                      className={`text-lg font-bold ${
-                        ['sale', 'receipt'].includes(transaction.transaction_type)
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }`}
-                    >
-                      {['sale', 'receipt'].includes(transaction.transaction_type)
-                        ? '+'
-                        : '-'}
-                      ₺{transaction.amount.toFixed(2)}
-                    </p>
-                    {transaction.payment_method && (
-                      <Badge variant="outline" className="mt-1">
-                        {PAYMENT_METHOD_LABELS[transaction.payment_method as any]}
-                      </Badge>
-                    )}
-                  </div>
+
+                  {/* Sipariş içeriğini göster */}
+                  {transaction.reference_type === 'order' && transaction.reference_id && (
+                    <OrderContent orderId={transaction.reference_id} />
+                  )}
                 </div>
               ))
             )}
@@ -713,5 +745,39 @@ function PaymentForm({ account, onClose }: { account: any; onClose: () => void }
         <Button type="submit">Kaydet</Button>
       </div>
     </form>
+  );
+}
+
+// Sipariş İçeriği Gösterimi
+function OrderContent({ orderId }: { orderId: string }) {
+  const [order, setOrder] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        const { getOrders } = await import('@/lib/pos-store');
+        const orders = await getOrders();
+        const foundOrder = orders.find((o: any) => o.id === orderId);
+        setOrder(foundOrder);
+      } catch (error) {
+        console.error('Sipariş yüklenemedi:', error);
+      }
+    };
+    fetchOrder();
+  }, [orderId]);
+
+  if (!order) return null;
+
+  return (
+    <div className="mt-2 p-2 bg-muted/50 rounded-md">
+      <p className="text-xs font-medium mb-1">Sipariş İçeriği:</p>
+      <div className="space-y-1">
+        {order.items.map((item: any, index: number) => (
+          <div key={index} className="text-xs text-muted-foreground">
+            {item.quantity}x {item.productName} - ₺{item.totalPrice.toFixed(2)}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

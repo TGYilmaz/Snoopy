@@ -194,6 +194,11 @@ export function OrderScreen() {
   }
 
   const openPaymentDialog = async () => {
+    if (isCredit && selectedAccount) {
+      await completeOrder('credit', false);
+      return;
+    }
+    
     setIsProcessing(true)
     setStockWarning(null)
     
@@ -234,38 +239,37 @@ export function OrderScreen() {
     }
   }
 
-  const completeOrder = async (
-    method: 'cash' | 'card' | 'mixed',
+ const completeOrder = async (
+    method: 'cash' | 'card' | 'mixed' | 'credit',
     isPartial: boolean = false
   ) => {
     setIsProcessing(true)
     
     try {
       // Veresiye kontrolü
-      if (isCredit) {
+      if (method === 'credit' || isCredit) {
         if (!selectedAccount) {
           alert('Veresiye satış için lütfen bir cari hesap seçin')
           setIsProcessing(false)
           return
         }
         
-        // Veresiye için ödeme bilgisi yok
         const itemsToSave = isPartial 
           ? cart.filter(item => selectedItems.has(getItemKey(item)))
           : cart
-        
+
         const order: Order = {
           id: generateId(),
           items: itemsToSave,
           total: isPartial ? getSelectedTotal() : total,
           paymentMethod: 'credit',
-          payments: [], // Veresiye'de ödeme yok
+          payments: [], // Veresiye'de ödeme bilgisi yok
           status: 'completed',
           createdAt: new Date().toISOString(),
         }
-        
+
         await saveOrder(order)
-        
+
         // Entegrasyon
         try {
           const { processOrderWithIntegration } = await import('@/lib/order-integration')
@@ -280,13 +284,13 @@ export function OrderScreen() {
         } catch (integrationError) {
           console.error('Entegrasyon hatası:', integrationError)
         }
-        
+
         if (isPartial) {
           setCart(prev => prev.filter(item => !selectedItems.has(getItemKey(item))))
         } else {
           setCart([])
         }
-        
+
         setShowPaymentDialog(false)
         setShowSuccessDialog(true)
         setPaymentStep('method')
@@ -302,84 +306,84 @@ export function OrderScreen() {
         return
       }
       
-      // Normal ödeme akışı devam eder...
+      // Normal ödeme akışı
       const cash = parseFloat(cashAmount) || 0
       const card = parseFloat(cardAmount) || 0
-    
-    if (method === 'mixed' && (cash + card) === 0) {
-      alert('Lütfen ödeme tutarlarını giriniz')
-      setIsProcessing(false)
-      return
-    }
+      
+      if (method === 'mixed' && (cash + card) === 0) {
+        alert('Lütfen ödeme tutarlarını giriniz')
+        setIsProcessing(false)
+        return
+      }
 
-    const payments: PaymentDetail[] = []
-    
-    if (method === 'cash') {
-      payments.push({ method: 'cash', amount: isPartial ? getSelectedTotal() : total })
-    } else if (method === 'card') {
-      payments.push({ method: 'card', amount: isPartial ? getSelectedTotal() : total })
-    } else if (method === 'mixed') {
-      if (cash > 0) payments.push({ method: 'cash', amount: cash })
-      if (card > 0) payments.push({ method: 'card', amount: card })
-    }
+      const payments: PaymentDetail[] = []
+      
+      if (method === 'cash') {
+        payments.push({ method: 'cash', amount: isPartial ? getSelectedTotal() : total })
+      } else if (method === 'card') {
+        payments.push({ method: 'card', amount: isPartial ? getSelectedTotal() : total })
+      } else if (method === 'mixed') {
+        if (cash > 0) payments.push({ method: 'cash', amount: cash })
+        if (card > 0) payments.push({ method: 'card', amount: card })
+      }
 
-    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
-    const expectedAmount = isPartial ? getSelectedTotal() : total
+      const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
+      const expectedAmount = isPartial ? getSelectedTotal() : total
 
-    if (method === 'mixed' && Math.abs(totalPaid - expectedAmount) > 0.01) {
-      alert(`Ödeme tutarı toplam tutara eşit olmalıdır. Beklenen: ₺${expectedAmount.toFixed(2)}, Girilen: ₺${totalPaid.toFixed(2)}`)
-      setIsProcessing(false)
-      return
-    }
+      if (method === 'mixed' && Math.abs(totalPaid - expectedAmount) > 0.01) {
+        alert(`Ödeme tutarı toplam tutara eşit olmalıdır. Beklenen: ₺${expectedAmount.toFixed(2)}, Girilen: ₺${totalPaid.toFixed(2)}`)
+        setIsProcessing(false)
+        return
+      }
 
-    const itemsToSave = isPartial 
-      ? cart.filter(item => selectedItems.has(getItemKey(item)))
-      : cart
+      const itemsToSave = isPartial 
+        ? cart.filter(item => selectedItems.has(getItemKey(item)))
+        : cart
 
-    const order: Order = {
-      id: generateId(),
-      items: itemsToSave,
-      total: isPartial ? getSelectedTotal() : total,
-      paymentMethod: method,
-      payments,
-      status: 'completed',
-      createdAt: new Date().toISOString(),
-    }
-
-    await saveOrder(order)
-    
-    // Entegrasyon
-    try {
-      const { processOrderWithIntegration } = await import('@/lib/order-integration')
-      await processOrderWithIntegration({
-        orderId: order.id,
+      const order: Order = {
+        id: generateId(),
         items: itemsToSave,
-        totalAmount: order.total,
-        paymentMethod: isCredit ? 'credit' : method,
-        accountId: selectedAccount || undefined,
-        isCredit,
-      })
-    } catch (integrationError) {
-      console.error('Entegrasyon hatası:', integrationError)
-    }
+        total: isPartial ? getSelectedTotal() : total,
+        paymentMethod: method,
+        payments,
+        status: 'completed',
+        createdAt: new Date().toISOString(),
+      }
 
-    if (isPartial) {
-      setCart(prev => prev.filter(item => !selectedItems.has(getItemKey(item))))
-    } else {
-      setCart([])
-    }
+      await saveOrder(order)
 
-    setShowPaymentDialog(false)
-    setShowSuccessDialog(true)
-    setPaymentStep('method')
-    setPaymentMethod(null)
-    setCashAmount('')
-    setCardAmount('')
-    deselectAllItems()
-    setSelectedAccount(null)
-    setIsCredit(false)
-    setStockWarning(null)
-    setCreditWarning(null)
+      // Entegrasyon
+      try {
+        const { processOrderWithIntegration } = await import('@/lib/order-integration')
+        await processOrderWithIntegration({
+          orderId: order.id,
+          items: itemsToSave,
+          totalAmount: order.total,
+          paymentMethod: method,
+          accountId: selectedAccount || undefined,
+          isCredit: false,
+        })
+      } catch (integrationError) {
+        console.error('Entegrasyon hatası:', integrationError)
+      }
+
+      if (isPartial) {
+        setCart(prev => prev.filter(item => !selectedItems.has(getItemKey(item))))
+      } else {
+        setCart([])
+      }
+
+      setShowPaymentDialog(false)
+      setShowSuccessDialog(true)
+      setPaymentStep('method')
+      setPaymentMethod(null)
+      setCashAmount('')
+      setCardAmount('')
+      deselectAllItems()
+      setSelectedAccount(null)
+      setIsCredit(false)
+      setStockWarning(null)
+      setCreditWarning(null)
     } catch (error) {
       console.error('Sipariş tamamlama hatası:', error)
       alert('Sipariş tamamlanırken bir hata oluştu. Lütfen tekrar deneyin.')

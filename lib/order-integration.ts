@@ -32,6 +32,18 @@ export async function processOrderWithIntegration({
       }
 
       try {
+        // Ürün ID'si ile stock var mı kontrol et
+        const { data: stockExists } = await supabase
+          .from('stocks')
+          .select('id')
+          .eq('id', item.productId)
+          .maybeSingle();
+
+        if (!stockExists) {
+          console.warn(`Ürün stocks tablosunda yok: ${item.productName}`);
+          continue;
+        }
+
         // Reçete varsa hammaddeleri düş
         const recipe = await recipeService.getByProductId(item.productId);
         
@@ -55,8 +67,7 @@ export async function processOrderWithIntegration({
           });
         }
       } catch (itemError) {
-        console.warn(`Ürün işleme hatası (${item.productName}):`, itemError);
-        // Hata olsa bile devam et
+        console.error(`Ürün işleme hatası (${item.productName}):`, itemError);
       }
     }
 

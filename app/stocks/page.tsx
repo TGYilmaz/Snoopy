@@ -45,7 +45,9 @@ import {
   TrendingUp,
   Edit,
   Trash2,
+  Home,
 } from 'lucide-react';
+import Link from 'next/link';
 import { STOCK_CATEGORY_LABELS, STOCK_UNIT_LABELS } from '@/lib/pos-types-extended';
 
 export default function StocksPage() {
@@ -94,9 +96,16 @@ export default function StocksPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Başlık ve Özet Kartları */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Stok Yönetimi</h1>
-          <p className="text-muted-foreground">Stok takibi ve yönetimi</p>
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="outline" size="icon">
+              <Home className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">Stok Yönetimi</h1>
+            <p className="text-muted-foreground">Stok takibi ve yönetimi</p>
+          </div>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -322,7 +331,7 @@ export default function StocksPage() {
   );
 }
 
-// Stok Ekleme Formu Bileşeni (ayrı dosya olarak da oluşturulabilir)
+// Stok Ekleme Formu Bileşeni
 function StockForm({ onClose, stock }: { onClose: () => void; stock?: any }) {
   const { addStock, updateStock } = useStockStore();
   const [formData, setFormData] = useState({
@@ -339,15 +348,26 @@ function StockForm({ onClose, stock }: { onClose: () => void; stock?: any }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validasyon
+    if (!formData.name || formData.cost_price < 0 || formData.sell_price < 0) {
+      alert('Lütfen tüm zorunlu alanları doldurun');
+      return;
+    }
+
     try {
       if (stock) {
         await updateStock(stock.id, formData);
       } else {
-        await addStock(formData);
+        await addStock({
+          ...formData,
+          is_active: true,
+        });
       }
       onClose();
     } catch (error) {
       console.error('Hata:', error);
+      alert('Kaydetme sırasında bir hata oluştu');
     }
   };
 

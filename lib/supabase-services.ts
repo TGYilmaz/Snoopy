@@ -94,7 +94,7 @@ export const stockService = {
   async delete(id: string) {
     const { error } = await supabase
       .from('stocks')
-      .update({ is_active: false })
+      .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) throw error;

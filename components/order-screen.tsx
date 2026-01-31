@@ -11,13 +11,6 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -27,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, Minus, Trash2, CreditCard, Banknote, X, ImageIcon, Package, Wallet, AlertTriangle, User } from 'lucide-react'
+import { Plus, Minus, Trash2, CreditCard, Banknote, X, ImageIcon, Package, Wallet } from 'lucide-react'
 import { Product, Menu, OrderItem, Order, Category, PaymentDetail } from '@/lib/pos-types'
 import { getProducts, getMenus, getCategories, saveOrder, generateId } from '@/lib/pos-store'
 
@@ -40,16 +33,6 @@ export function OrderScreen() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   
-  // Cari hesap state'leri
-  const [accounts, setAccounts] = useState<any[]>([])
-  const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
-  const [isCredit, setIsCredit] = useState(false)
-  
-  // Hata ve uyarı state'leri
-  const [stockWarning, setStockWarning] = useState<string | null>(null)
-  const [creditWarning, setCreditWarning] = useState<string | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
-  
   // Ödeme dialog state'leri
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [cashAmount, setCashAmount] = useState('')
@@ -59,32 +42,8 @@ export function OrderScreen() {
 
   useEffect(() => {
     loadData()
-    loadAccounts()
   }, [])
 
-  // Cari hesap seçildiğinde veya toplam değiştiğinde kredi kontrolü
-  useEffect(() => {
-    const checkCredit = async () => {
-      if (isCredit && selectedAccount && total > 0) {
-        try {
-          const { checkCreditLimit } = await import('@/lib/order-integration')
-          const creditCheck = await checkCreditLimit(selectedAccount, total)
-          if (!creditCheck.allowed) {
-            setCreditWarning(`Kredi limiti aşılacak! Eksik tutar: ₺${creditCheck.deficit?.toFixed(2)}`)
-          } else {
-            setCreditWarning(null)
-          }
-        } catch (error) {
-          console.error('Kredi kontrolü hatası:', error)
-          setCreditWarning(null)
-        }
-      } else {
-        setCreditWarning(null)
-      }
-    }
-    checkCredit()
-  }, [isCredit, selectedAccount, total])
-  
   const loadData = async () => {
     const [productsData, menusData, categoriesData] = await Promise.all([
       getProducts(),
@@ -94,23 +53,6 @@ export function OrderScreen() {
     setProducts(productsData.filter((p) => p.active))
     setMenus(menusData.filter((m) => m.active))
     setCategories(categoriesData)
-  }
-
-  const loadAccounts = async () => {
-    try {
-      const { useAccountStore } = await import('@/lib/pos-store-extended')
-      const store = useAccountStore.getState()
-      
-      // Eğer accounts boşsa fetch et
-      if (store.accounts.length === 0) {
-        await store.fetchAccounts('customer')
-      }
-      
-      setAccounts(store.accounts.filter(a => a.account_type === 'customer'))
-    } catch (error) {
-      console.error('Cari hesaplar yüklenemedi:', error)
-      setAccounts([])
-    }
   }
 
   const getProductById = (id: string) => products.find((p) => p.id === id)
@@ -181,10 +123,6 @@ export function OrderScreen() {
 
   const clearCart = useCallback(() => {
     setCart([])
-    setSelectedAccount(null)
-    setIsCredit(false)
-    setStockWarning(null)
-    setCreditWarning(null)
   }, [])
 
   const total = cart.reduce((sum, item) => sum + item.totalPrice, 0)
@@ -218,41 +156,7 @@ export function OrderScreen() {
       .reduce((sum, item) => sum + item.totalPrice, 0)
   }
 
-  const openPaymentDialog = async () => {
-    setIsProcessing(true)
-    
-    try {
-      // Dinamik import ile stok kontrolü
-      const { checkStockAvailability } = await import('@/lib/order-integration')
-      const stockCheck = await checkStockAvailability(cart)
-      
-      if (!stockCheck.available) {
-        const unavailableProducts = stockCheck.unavailableItems
-          .map(item => `${item.product_name} (İstenilen: ${item.requested}, Mevcut: ${item.available})`)
-          .join('\n')
-        setStockWarning(`Yetersiz stok:\n${unavailableProducts}`)
-        setIsProcessing(false)
-        return
-      }
-      
-      setStockWarning(null)
-      
-      // Kredi kontrolü (veresiye ise)
-      if (isCredit && selectedAccount) {
-        const { checkCreditLimit } = await import('@/lib/order-integration')
-        const creditCheck = await checkCreditLimit(selectedAccount, total)
-        if (!creditCheck.allowed) {
-          setCreditWarning(`Kredi limiti aşılacak! Eksik tutar: ₺${creditCheck.deficit?.toFixed(2)}`)
-        }
-      }
-    } catch (error) {
-      console.error('Ödeme kontrolü hatası:', error)
-      setStockWarning(null)
-      setCreditWarning(null)
-    } finally {
-      setIsProcessing(false)
-    }
-    
+  const openPaymentDialog = () => {
     selectAllItems()
     setPaymentMethod(null)
     setPaymentStep('method')
@@ -275,92 +179,62 @@ export function OrderScreen() {
     method: 'cash' | 'card' | 'mixed',
     isPartial: boolean = false
   ) => {
-    setIsProcessing(true)
+    const cash = parseFloat(cashAmount) || 0
+    const card = parseFloat(cardAmount) || 0
     
-    try {
-      const cash = parseFloat(cashAmount) || 0
-      const card = parseFloat(cardAmount) || 0
-      
-      if (method === 'mixed' && (cash + card) === 0) {
-        alert('Lütfen ödeme tutarlarını giriniz')
-        setIsProcessing(false)
-        return
-      }
-
-      const payments: PaymentDetail[] = []
-      
-      if (method === 'cash') {
-        payments.push({ method: 'cash', amount: isPartial ? getSelectedTotal() : total })
-      } else if (method === 'card') {
-        payments.push({ method: 'card', amount: isPartial ? getSelectedTotal() : total })
-      } else if (method === 'mixed') {
-        if (cash > 0) payments.push({ method: 'cash', amount: cash })
-        if (card > 0) payments.push({ method: 'card', amount: card })
-      }
-
-      const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
-      const expectedAmount = isPartial ? getSelectedTotal() : total
-
-      if (method === 'mixed' && Math.abs(totalPaid - expectedAmount) > 0.01) {
-        alert(`Ödeme tutarı toplam tutara eşit olmalıdır. Beklenen: ₺${expectedAmount.toFixed(2)}, Girilen: ₺${totalPaid.toFixed(2)}`)
-        setIsProcessing(false)
-        return
-      }
-
-      const itemsToSave = isPartial 
-        ? cart.filter(item => selectedItems.has(getItemKey(item)))
-        : cart
-
-      const order: Order = {
-        id: generateId(),
-        items: itemsToSave,
-        total: isPartial ? getSelectedTotal() : total,
-        paymentMethod: method,
-        payments,
-        status: 'completed',
-        createdAt: new Date().toISOString(),
-      }
-
-      await saveOrder(order)
-      
-      // Stok ve cari entegrasyonu - dinamik import
-      try {
-        const { processOrderWithIntegration } = await import('@/lib/order-integration')
-        await processOrderWithIntegration({
-          orderId: order.id,
-          items: itemsToSave,
-          totalAmount: order.total,
-          paymentMethod: isCredit ? 'credit' : method,
-          accountId: selectedAccount || undefined,
-          isCredit,
-        })
-      } catch (integrationError) {
-        console.error('Entegrasyon hatası (sipariş kaydedildi):', integrationError)
-      }
-
-      if (isPartial) {
-        setCart(prev => prev.filter(item => !selectedItems.has(getItemKey(item))))
-      } else {
-        setCart([])
-      }
-
-      setShowPaymentDialog(false)
-      setSelectedAccount(null)
-      setIsCredit(false)
-      setStockWarning(null)
-      setCreditWarning(null)
-      setShowSuccessDialog(true)
-      setPaymentStep('method')
-      setPaymentMethod(null)
-      setCashAmount('')
-      setCardAmount('')
-      deselectAllItems()
-    } catch (error) {
-      console.error('Sipariş tamamlama hatası:', error)
-      alert('Sipariş tamamlanırken bir hata oluştu. Lütfen tekrar deneyin.')
-    } finally {
-      setIsProcessing(false)
+    if (method === 'mixed' && (cash + card) === 0) {
+      alert('Lütfen ödeme tutarlarını giriniz')
+      return
     }
+
+    const payments: PaymentDetail[] = []
+    
+    if (method === 'cash') {
+      payments.push({ method: 'cash', amount: isPartial ? getSelectedTotal() : total })
+    } else if (method === 'card') {
+      payments.push({ method: 'card', amount: isPartial ? getSelectedTotal() : total })
+    } else if (method === 'mixed') {
+      if (cash > 0) payments.push({ method: 'cash', amount: cash })
+      if (card > 0) payments.push({ method: 'card', amount: card })
+    }
+
+    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
+    const expectedAmount = isPartial ? getSelectedTotal() : total
+
+    if (method === 'mixed' && Math.abs(totalPaid - expectedAmount) > 0.01) {
+      alert(`Ödeme tutarı toplam tutara eşit olmalıdır. Beklenen: ₺${expectedAmount.toFixed(2)}, Girilen: ₺${totalPaid.toFixed(2)}`)
+      return
+    }
+
+    const itemsToSave = isPartial 
+      ? cart.filter(item => selectedItems.has(getItemKey(item)))
+      : cart
+
+    const order: Order = {
+      id: generateId(),
+      items: itemsToSave,
+      total: isPartial ? getSelectedTotal() : total,
+      paymentMethod: method,
+      payments,
+      status: 'completed',
+      createdAt: new Date().toISOString(),
+    }
+
+    await saveOrder(order)
+
+    if (isPartial) {
+      setCart(prev => prev.filter(item => !selectedItems.has(getItemKey(item))))
+    } else {
+      setCart([])
+    }
+
+    setShowPaymentDialog(false)
+    setShowSuccessDialog(true)
+    setPaymentStep('method')
+    setPaymentMethod(null)
+    setCashAmount('')
+    setCardAmount('')
+    deselectAllItems()
   }
 
   const filteredProducts = selectedCategory === 'all' 
@@ -622,79 +496,18 @@ export function OrderScreen() {
         </ScrollArea>
 
         <div className="p-4 border-t border-border space-y-4">
-          {/* Cari Hesap Seçimi */}
-          {cart.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-muted-foreground" />
-                <label className="text-sm font-medium">Cari Hesap (Opsiyonel)</label>
-              </div>
-              <Select value={selectedAccount || undefined} onValueChange={setSelectedAccount}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Cari seçiniz" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.length === 0 ? (
-                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      Müşteri hesabı bulunamadı
-                    </div>
-                  ) : (
-                    accounts.map(account => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.name} (Bakiye: ₺{account.balance.toFixed(2)})
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {/* Veresiye Checkbox */}
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="credit" 
-                  checked={isCredit}
-                  onCheckedChange={(checked) => setIsCredit(checked as boolean)}
-                  disabled={!selectedAccount}
-                />
-                <label
-                  htmlFor="credit"
-                  className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
-                    !selectedAccount ? 'text-muted-foreground' : ''
-                  }`}
-                >
-                  Veresiye
-                </label>
-              </div>
-              {/* Uyarılar */}
-              {creditWarning && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                  <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-yellow-600 dark:text-yellow-400">{creditWarning}</p>
-                </div>
-              )}
-              {stockWarning && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                  <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-red-600 dark:text-red-400 whitespace-pre-line">{stockWarning}</p>
-                </div>
-              )}
-            </div>
-          )}
-          
           <div className="flex justify-between text-lg font-semibold text-card-foreground">
             <span>Toplam</span>
             <span>₺{total.toFixed(2)}</span>
           </div>
 
-          <Button 
-            className="w-full h-14 text-lg" 
-            disabled={cart.length === 0 || isProcessing} 
-            onClick={openPaymentDialog}
-          >
-            {isProcessing ? 'Kontrol ediliyor...' : `Ödeme Al ₺${total.toFixed(2)}`}
+          <Button className="w-full h-14 text-lg" disabled={cart.length === 0} onClick={openPaymentDialog}>
+            Ödeme Al ₺{total.toFixed(2)}
           </Button>
         </div>
       </Card>
 
+      {/* Payment Dialog - Sonraki mesajda devam */}
       {/* Payment Dialog */}
       <AlertDialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <AlertDialogContent className="max-w-2xl max-h-[90vh] flex flex-col">

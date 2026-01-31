@@ -238,11 +238,77 @@ export function OrderScreen() {
     method: 'cash' | 'card' | 'mixed',
     isPartial: boolean = false
   ) => {
-    const cash = parseFloat(cashAmount) || 0
-    const card = parseFloat(cardAmount) || 0
+    setIsProcessing(true)
+    
+    try {
+      // Veresiye kontrolü
+      if (isCredit) {
+        if (!selectedAccount) {
+          alert('Veresiye satış için lütfen bir cari hesap seçin')
+          setIsProcessing(false)
+          return
+        }
+        
+        // Veresiye için ödeme bilgisi yok
+        const itemsToSave = isPartial 
+          ? cart.filter(item => selectedItems.has(getItemKey(item)))
+          : cart
+        
+        const order: Order = {
+          id: generateId(),
+          items: itemsToSave,
+          total: isPartial ? getSelectedTotal() : total,
+          paymentMethod: 'credit',
+          payments: [], // Veresiye'de ödeme yok
+          status: 'completed',
+          createdAt: new Date().toISOString(),
+        }
+        
+        await saveOrder(order)
+        
+        // Entegrasyon
+        try {
+          const { processOrderWithIntegration } = await import('@/lib/order-integration')
+          await processOrderWithIntegration({
+            orderId: order.id,
+            items: itemsToSave,
+            totalAmount: order.total,
+            paymentMethod: 'credit',
+            accountId: selectedAccount,
+            isCredit: true,
+          })
+        } catch (integrationError) {
+          console.error('Entegrasyon hatası:', integrationError)
+        }
+        
+        if (isPartial) {
+          setCart(prev => prev.filter(item => !selectedItems.has(getItemKey(item))))
+        } else {
+          setCart([])
+        }
+        
+        setShowPaymentDialog(false)
+        setShowSuccessDialog(true)
+        setPaymentStep('method')
+        setPaymentMethod(null)
+        setCashAmount('')
+        setCardAmount('')
+        deselectAllItems()
+        setSelectedAccount(null)
+        setIsCredit(false)
+        setStockWarning(null)
+        setCreditWarning(null)
+        setIsProcessing(false)
+        return
+      }
+      
+      // Normal ödeme akışı devam eder...
+      const cash = parseFloat(cashAmount) || 0
+      const card = parseFloat(cardAmount) || 0
     
     if (method === 'mixed' && (cash + card) === 0) {
       alert('Lütfen ödeme tutarlarını giriniz')
+      setIsProcessing(false)
       return
     }
 
@@ -262,6 +328,7 @@ export function OrderScreen() {
 
     if (method === 'mixed' && Math.abs(totalPaid - expectedAmount) > 0.01) {
       alert(`Ödeme tutarı toplam tutara eşit olmalıdır. Beklenen: ₺${expectedAmount.toFixed(2)}, Girilen: ₺${totalPaid.toFixed(2)}`)
+      setIsProcessing(false)
       return
     }
 
@@ -309,6 +376,16 @@ export function OrderScreen() {
     setCashAmount('')
     setCardAmount('')
     deselectAllItems()
+    setSelectedAccount(null)
+    setIsCredit(false)
+    setStockWarning(null)
+    setCreditWarning(null)
+    } catch (error) {
+      console.error('Sipariş tamamlama hatası:', error)
+      alert('Sipariş tamamlanırken bir hata oluştu. Lütfen tekrar deneyin.')
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const filteredProducts = selectedCategory === 'all' 
@@ -701,38 +778,60 @@ export function OrderScreen() {
                 </div>
               </ScrollArea>
 
-              <div className="grid grid-cols-3 gap-4 py-4">
-                <Button
-                  variant="outline"
-                  className="h-24 flex flex-col gap-2"
-                  onClick={() => handlePaymentMethodSelect('cash')}
-                  disabled={selectedItems.size === 0}
-                >
-                  <Banknote className="w-8 h-8" />
-                  <span className="text-lg">Nakit</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-24 flex flex-col gap-2"
-                  onClick={() => handlePaymentMethodSelect('card')}
-                  disabled={selectedItems.size === 0}
-                >
-                  <CreditCard className="w-8 h-8" />
-                  <span className="text-lg">Kredi Kartı</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-24 flex flex-col gap-2"
-                  onClick={() => handlePaymentMethodSelect('mixed')}
-                  disabled={selectedItems.size === 0}
-                >
-                  <Wallet className="w-8 h-8" />
-                  <span className="text-lg">Karma</span>
-                </Button>
-              </div>
+              {!isCredit ? (
+                <div className="grid grid-cols-3 gap-4 py-4">
+                  <Button
+                    variant="outline"
+                    className="h-24 flex flex-col gap-2"
+                    onClick={() => handlePaymentMethodSelect('cash')}
+                    disabled={selectedItems.size === 0}
+                  >
+                    <Banknote className="w-8 h-8" />
+                    <span className="text-lg">Nakit</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-24 flex flex-col gap-2"
+                    onClick={() => handlePaymentMethodSelect('card')}
+                    disabled={selectedItems.size === 0}
+                  >
+                    <CreditCard className="w-8 h-8" />
+                    <span className="text-lg">Kredi Kartı</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-24 flex flex-col gap-2"
+                    onClick={() => handlePaymentMethodSelect('mixed')}
+                    disabled={selectedItems.size === 0}
+                  >
+                    <Wallet className="w-8 h-8" />
+                    <span className="text-lg">Karma</span>
+                  </Button>
+                </div>
+              ) : (
+                <div className="py-6">
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <AlertTriangle className="w-6 h-6 text-blue-500 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-blue-600 dark:text-blue-400">Veresiye Satış</p>
+                      <p className="text-sm text-blue-600/80 dark:text-blue-400/80 mt-1">
+                        Bu satış açık veresiye olarak kaydedilecektir. Ödeme daha sonra alınacaktır.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <AlertDialogFooter>
                 <AlertDialogCancel>İptal</AlertDialogCancel>
+                {isCredit && (
+                  <Button
+                    onClick={() => completeOrder('cash', selectedItems.size < cart.length)}
+                    disabled={selectedItems.size === 0 || isProcessing || !selectedAccount}
+                  >
+                    {isProcessing ? 'İşleniyor...' : 'Veresiye Kaydet'}
+                  </Button>
+                )}
               </AlertDialogFooter>
             </>
           ) : (

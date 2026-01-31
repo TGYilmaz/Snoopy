@@ -36,7 +36,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Edit, Trash2, ChefHat, X } from 'lucide-react';
+import { Plus, Edit, Trash2, ChefHat, X, Home } from 'lucide-react';
+import Link from 'next/link';
 import { STOCK_UNIT_LABELS } from '@/lib/pos-types-extended';
 
 export default function RecipesPage() {
@@ -69,11 +70,18 @@ export default function RecipesPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Başlık */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Reçete Yönetimi</h1>
-          <p className="text-muted-foreground">
-            Ürün reçeteleri ve hammadde takibi
-          </p>
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="outline" size="icon">
+              <Home className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">Reçete Yönetimi</h1>
+            <p className="text-muted-foreground">
+              Ürün reçeteleri ve hammadde takibi
+            </p>
+          </div>
         </div>
         <Dialog
           open={isAddDialogOpen}
@@ -462,7 +470,7 @@ function RecipeForm({
         <Button type="button" variant="outline" onClick={onClose}>
           İptal
         </Button>
-        <Button type="submit">{recipe ? 'Güncelle' : 'Ekle'}</Button>
+        <Button type="submit">{recipe ? 'Güncule' : 'Ekle'}</Button>
       </div>
     </form>
   );

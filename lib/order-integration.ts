@@ -85,30 +85,44 @@ export async function processOrderWithIntegration({
       console.log('👤 Cari hesap işlemi yapılıyor:', accountId);
       
       try {
-        // Satış kaydı
-        const saleTransaction = await accountTransactionService.create({
-          account_id: accountId,
-          transaction_type: 'sale',
-          amount: totalAmount,
-          payment_method: isCredit ? 'credit' : paymentMethod,
-          reference_type: 'order',
-          reference_id: orderId,
-          description: `Sipariş #${orderId.substring(0, 8)}`,
-        });
-        console.log('✅ Satış kaydı oluşturuldu:', saleTransaction.id);
-
-        // Veresiye değilse tahsilat kaydı da oluştur
-        if (!isCredit && paymentMethod !== 'credit') {
-          const receiptTransaction = await accountTransactionService.create({
+        if (isCredit) {
+          // VERESİYE SATIŞ
+          // Müşteriye borç oluştur (balance negatif olmalı)
+          await accountTransactionService.create({
             account_id: accountId,
-            transaction_type: 'receipt',
-            amount: totalAmount,
+            transaction_type: 'sale',
+            amount: -totalAmount, // NEGATİF! Müşteri bize borçlu
+            payment_method: 'credit',
+            reference_type: 'order',
+            reference_id: orderId,
+            description: `Veresiye satış - Sipariş #${orderId.substring(0, 8)}`,
+          });
+          console.log('✅ Veresiye satış kaydı oluşturuldu');
+        } else {
+          // NORMAL SATIŞ (Nakit/Kart)
+          // Önce satış kaydı (borç)
+          await accountTransactionService.create({
+            account_id: accountId,
+            transaction_type: 'sale',
+            amount: -totalAmount, // NEGATİF - borç
             payment_method: paymentMethod,
             reference_type: 'order',
             reference_id: orderId,
-            description: `Sipariş #${orderId.substring(0, 8)} tahsilatı`,
+            description: `Satış - Sipariş #${orderId.substring(0, 8)}`,
           });
-          console.log('✅ Tahsilat kaydı oluşturuldu:', receiptTransaction.id);
+          console.log('✅ Satış kaydı oluşturuldu');
+
+          // Sonra tahsilat kaydı (alacak - borcu kapatıyor)
+          await accountTransactionService.create({
+            account_id: accountId,
+            transaction_type: 'receipt',
+            amount: totalAmount, // POZİTİF - tahsilat
+            payment_method: paymentMethod,
+            reference_type: 'order',
+            reference_id: orderId,
+            description: `Tahsilat - Sipariş #${orderId.substring(0, 8)}`,
+          });
+          console.log('✅ Tahsilat kaydı oluşturuldu');
         }
       } catch (accountError) {
         console.error('❌ Cari hesap işleme hatası:', accountError);

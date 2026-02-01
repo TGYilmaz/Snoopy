@@ -346,31 +346,49 @@ function StockForm({ onClose, stock }: { onClose: () => void; stock?: any }) {
     description: stock?.description || '',
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     // Validasyon
-    if (!formData.name || formData.cost_price < 0 || formData.sell_price < 0) {
-      alert('Lütfen tüm zorunlu alanları doldurun');
+    if (!formData.name) {
+      alert('Ürün adı zorunludur');
       return;
     }
-
+    
+    // NaN kontrolü
+    const cleanData = {
+      ...formData,
+      current_quantity: isNaN(formData.current_quantity) ? 0 : formData.current_quantity,
+      minimum_quantity: isNaN(formData.minimum_quantity) ? 0 : formData.minimum_quantity,
+      cost_price: isNaN(formData.cost_price) ? 0 : formData.cost_price,
+      sell_price: isNaN(formData.sell_price) ? 0 : formData.sell_price,
+      barcode: formData.barcode || null, // Boşsa null
+      description: formData.description || null, // Boşsa null
+    };
+    
     try {
       if (stock) {
-        await updateStock(stock.id, formData);
+        await updateStock(stock.id, cleanData);
       } else {
         await addStock({
-          ...formData,
+          ...cleanData,
           is_active: true,
         });
       }
       onClose();
-    } catch (error) {
-      console.error('Hata:', error);
-      alert('Kaydetme sırasında bir hata oluştu');
+    } catch (error: any) {
+      console.error('Stok kaydetme hatası:', error);
+      
+      // Hata mesajını göster
+      if (error.code === '23505') {
+        alert('Bu isim veya barkod zaten kullanılıyor');
+      } else if (error.message) {
+        alert('Hata: ' + error.message);
+      } else {
+        alert('Kaydetme sırasında bir hata oluştu');
+      }
     }
   };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <DialogHeader>

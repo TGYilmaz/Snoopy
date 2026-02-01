@@ -162,13 +162,12 @@ export const stockMovementService = {
 // ============================================
 
 export const recipeService = {
-  // Tüm reçeteleri getir
+// Tüm reçeteleri getir
   async getAll() {
     const { data, error } = await supabase
       .from('recipes')
       .select(`
         *,
-        product:stocks!recipes_product_id_fkey(*),
         recipe_items(
           *,
           material:stocks!recipe_items_material_id_fkey(*)
@@ -180,14 +179,13 @@ export const recipeService = {
     if (error) throw error;
     return (data || []) as Recipe[];
   },
-
-  // Ürüne göre reçete getir
+  
+// Ürüne göre reçete getir
   async getByProductId(productId: string) {
     const { data, error } = await supabase
       .from('recipes')
       .select(`
         *,
-        product:stocks!recipes_product_id_fkey(*),
         recipe_items(
           *,
           material:stocks!recipe_items_material_id_fkey(*)

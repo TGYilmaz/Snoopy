@@ -24,6 +24,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -642,9 +643,9 @@ function AccountDetails({
   );
 }
 
-// Ödeme Formu
+// Ödeme Formu - GÜNCELLENEN
 function PaymentForm({ account, onClose }: { account: any; onClose: () => void }) {
-  const { addTransaction } = useAccountStore();
+  const { addTransaction, fetchAccounts } = useAccountStore();
   const [formData, setFormData] = useState({
     transaction_type: 'payment' as any,
     amount: 0,
@@ -654,24 +655,39 @@ function PaymentForm({ account, onClose }: { account: any; onClose: () => void }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.amount || formData.amount <= 0) {
+      alert('Lütfen geçerli bir tutar girin');
+      return;
+    }
+
     try {
       await addTransaction({
         account_id: account.id,
         ...formData,
       });
+
+      // Hesapları yeniden yükle
+      await fetchAccounts();
+
       onClose();
     } catch (error) {
       console.error('Hata:', error);
+      alert('İşlem sırasında bir hata oluştu');
     }
   };
+
+  if (!account) {
+    return <div>Hesap bilgisi yüklenemedi</div>;
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <DialogHeader>
         <DialogTitle>Ödeme/Tahsilat</DialogTitle>
-        <p className="text-sm text-muted-foreground">
+        <DialogDescription>
           {account.name} - Güncel Bakiye: ₺{account.balance.toFixed(2)}
-        </p>
+        </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-4">

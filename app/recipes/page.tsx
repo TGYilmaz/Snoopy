@@ -238,6 +238,7 @@ function RecipeForm({
 }) {
   const { addRecipe, updateRecipe } = useRecipeStore();
   const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Products'ı yükle
   useEffect(() => {
@@ -249,7 +250,7 @@ function RecipeForm({
     loadProducts();
   }, []);
 
-  const rawMaterials = stocks; // Tüm stoklar hammadde olarak kullanılabilir
+  const rawMaterials = stocks;
 
   const [formData, setFormData] = useState({
     product_id: recipe?.product_id || '',
@@ -258,7 +259,7 @@ function RecipeForm({
     output_unit: recipe?.output_unit || 'piece',
     items: recipe?.recipe_items?.map((item: any) => ({
       material_id: item.material_id,
-      quantity: item.quantity,
+      quantity: item.quantity || 0,
       unit: item.unit,
     })) || [],
   });
@@ -268,7 +269,7 @@ function RecipeForm({
       ...formData,
       items: [
         ...formData.items,
-        { material_id: '', quantity: 0, unit: 'piece' as any },
+        { material_id: '', quantity: 1, unit: 'piece' as any }, // Varsayılan 1
       ],
     });
   };
@@ -282,28 +283,83 @@ function RecipeForm({
 
   const updateItem = (index: number, field: string, value: any) => {
     const newItems = [...formData.items];
-    newItems[index] = { ...newItems[index], [field]: value };
+    
+    if (field === 'quantity') {
+      // NaN kontrolü
+      const numValue = parseFloat(value);
+      newItems[index] = { 
+        ...newItems[index], 
+        [field]: isNaN(numValue) ? 0 : numValue 
+      };
+    } else {
+      newItems[index] = { ...newItems[index], [field]: value };
+    }
+    
     setFormData({ ...formData, items: newItems });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.product_id || !formData.name || formData.items.length === 0) {
-      alert('Lütfen tüm alanları doldurun ve en az bir hammadde ekleyin');
+    if (!formData.product_id) {
+      alert('Lütfen bir ürün seçin');
       return;
     }
 
+    if (!formData.name) {
+      alert('Lütfen reçete adı girin');
+      return;
+    }
+
+    if (formData.items.length === 0) {
+      alert('Lütfen en az bir hammadde ekleyin');
+      return;
+    }
+
+    // Hammadde kontrolü
+    const invalidItems = formData.items.filter(
+      item => !item.material_id || item.quantity <= 0
+    );
+
+    if (invalidItems.length > 0) {
+      alert('Lütfen tüm hammaddeleri seçin ve geçerli miktarlar girin');
+      return;
+    }
+
+    setLoading(true);
+
     try {
+      // Temiz veri
+      const cleanData = {
+        product_id: formData.product_id,
+        name: formData.name,
+        output_quantity: isNaN(formData.output_quantity) ? 1 : formData.output_quantity,
+        output_unit: formData.output_unit,
+        items: formData.items.map(item => ({
+          material_id: item.material_id,
+          quantity: isNaN(item.quantity) ? 0 : item.quantity,
+          unit: item.unit,
+        })),
+      };
+
       if (recipe) {
-        await updateRecipe(recipe.id, formData);
+        await updateRecipe(recipe.id, cleanData);
       } else {
-        await addRecipe(formData);
+        await addRecipe(cleanData);
       }
       onClose();
-    } catch (error) {
-      console.error('Hata:', error);
-      alert('Reçete kaydetme hatası');
+    } catch (error: any) {
+      console.error('Reçete kaydetme hatası:', error);
+      
+      if (error.code === '23505') {
+        alert('Bu ürün için zaten bir reçete var. Lütfen mevcut reçeteyi düzenleyin.');
+      } else if (error.message) {
+        alert('Hata: ' + error.message);
+      } else {
+        alert('Reçete kaydetme hatası');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -311,6 +367,9 @@ function RecipeForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <DialogHeader>
         <DialogTitle>{recipe ? 'Reçete Düzenle' : 'Yeni Reçete Ekle'}</DialogTitle>
+        <DialogDescription>
+          Ürün için gerekli hammaddeleri ve miktarlarını belirleyin
+        </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-4">
@@ -327,12 +386,13 @@ function RecipeForm({
           </div>
 
           <div className="col-span-2">
-            <label className="text-sm font-medium">Ürün Seçin (Products'tan)</label>
+            <label className="text-sm font-medium">Ürün Seçin</label>
             <Select
               value={formData.product_id}
               onValueChange={(value) =>
                 setFormData({ ...formData, product_id: value })
               }
+              disabled={!!recipe} // Düzenlerken değiştirilemez
             >
               <SelectTrigger>
                 <SelectValue placeholder="Ürün seçin" />
@@ -351,9 +411,11 @@ function RecipeForm({
                 )}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Ürünler → Menü Yönetimi'nden eklenebilir
-            </p>
+            {!recipe && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Sipariş ekranındaki "Ürünler" sekmesinden yeni ürün ekleyebilirsiniz
+              </p>
+            )}
           </div>
 
           <div>
@@ -361,13 +423,15 @@ function RecipeForm({
             <Input
               type="number"
               step="0.001"
+              min="0.001"
               value={formData.output_quantity}
-              onChange={(e) =>
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
                 setFormData({
                   ...formData,
-                  output_quantity: parseFloat(e.target.value),
-                })
-              }
+                  output_quantity: isNaN(val) ? 1 : val,
+                });
+              }}
               required
             />
           </div>
@@ -397,7 +461,7 @@ function RecipeForm({
         {/* Hammaddeler */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Hammaddeler (Stocks'tan)</label>
+            <label className="text-sm font-medium">Hammaddeler</label>
             <Button type="button" variant="outline" size="sm" onClick={addItem}>
               <Plus className="h-4 w-4 mr-2" />
               Hammadde Ekle
@@ -406,14 +470,14 @@ function RecipeForm({
 
           {formData.items.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-              Henüz hammadde eklenmemiş
+              Henüz hammadde eklenmemiş. "Hammadde Ekle" butonuna tıklayın.
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-96 overflow-y-auto">
               {formData.items.map((item, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-12 gap-2 p-3 border rounded-lg"
+                  className="grid grid-cols-12 gap-2 p-3 border rounded-lg bg-muted/30"
                 >
                   <div className="col-span-6">
                     <Select
@@ -423,17 +487,18 @@ function RecipeForm({
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Hammadde seçin (Stocks)" />
+                        <SelectValue placeholder="Hammadde seçin" />
                       </SelectTrigger>
                       <SelectContent>
                         {rawMaterials.length === 0 ? (
                           <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                            Henüz stok eklenmemiş
+                            Stok Yönetimi'nden stok ekleyin
                           </div>
                         ) : (
                           rawMaterials.map((material) => (
                             <SelectItem key={material.id} value={material.id}>
-                              {material.name} ({material.current_quantity} {STOCK_UNIT_LABELS[material.unit]})
+                              {material.name} ({material.current_quantity}{' '}
+                              {STOCK_UNIT_LABELS[material.unit]})
                             </SelectItem>
                           ))
                         )}
@@ -445,11 +510,13 @@ function RecipeForm({
                     <Input
                       type="number"
                       step="0.001"
+                      min="0.001"
                       placeholder="Miktar"
-                      value={item.quantity}
+                      value={item.quantity || ''}
                       onChange={(e) =>
-                        updateItem(index, 'quantity', parseFloat(e.target.value))
+                        updateItem(index, 'quantity', e.target.value)
                       }
+                      required
                     />
                   </div>
 
@@ -471,12 +538,13 @@ function RecipeForm({
                     </Select>
                   </div>
 
-                  <div className="col-span-1 flex items-center">
+                  <div className="col-span-1 flex items-center justify-center">
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => removeItem(index)}
+                      className="h-8 w-8 p-0"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -489,10 +557,12 @@ function RecipeForm({
       </div>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
           İptal
         </Button>
-        <Button type="submit">{recipe ? 'Güncelle' : 'Ekle'}</Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Kaydediliyor...' : recipe ? 'Güncelle' : 'Ekle'}
+        </Button>
       </div>
     </form>
   );

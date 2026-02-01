@@ -21,7 +21,7 @@ export async function processOrderWithIntegration({
   isCredit?: boolean;
 }) {
   console.log('🔄 Entegrasyon başlıyor:', { orderId, itemsCount: items.length, totalAmount, isCredit });
-  
+
   try {
     const { stockMovementService, recipeService, accountTransactionService } = await import('./supabase-services');
 
@@ -35,7 +35,7 @@ export async function processOrderWithIntegration({
 
       console.log('📦 İşleniyor:', item.productName, 'ID:', item.productId);
 
-try {
+      try {
         // Stocks tablosunda bu ürün var mı kontrol et
         const { data: stockExists, error: stockCheckError } = await supabase
           .from('stocks')
@@ -47,24 +47,24 @@ try {
           console.error('❌ Stok kontrolü hatası:', stockCheckError);
         }
 
-        // Reçete var mı kontrol et (stockExists olsun ya da olmasın)
+        // Reçete var mı kontrol et
         console.log('🔍 Reçete kontrol ediliyor:', item.productId);
         const recipe = await recipeService.getByProductId(item.productId);
-        
+
         if (recipe && recipe.recipe_items && recipe.recipe_items.length > 0) {
           console.log('🧾 Reçete bulundu, hammaddeler düşülüyor:', recipe.name);
           console.log('📋 Hammadde sayısı:', recipe.recipe_items.length);
-          
+
           await recipeService.processRecipe(item.productId, item.quantity, orderId);
           console.log('✅ Reçete işlendi');
-          continue; // Reçete işlendiyse direkt stok düşürme
+          continue; // Reçete işlendiyse direkt stok düşürme yapma
         }
 
         // Reçete yoksa ve stocks'ta varsa direkt stok düş
         if (stockExists) {
           console.log('✅ Stok bulundu:', stockExists.name, 'Mevcut:', stockExists.current_quantity);
           console.log('📉 Direkt stok düşümü yapılıyor');
-          
+
           const movement = await stockMovementService.create({
             stock_id: item.productId,
             movement_type: 'sale',
@@ -81,15 +81,15 @@ try {
       } catch (itemError) {
         console.error('❌ Ürün işleme hatası:', item.productName, itemError);
       }
-      
-    // 2. CARİ HESAP İŞLEMLERİ
+    } // ← for döngüsü burada kapatılıyor
+
+    // 2. CARİ HESAP İŞLEMLERİ (döngünün dışında, bir kez çalışır)
     if (accountId) {
       console.log('👤 Cari hesap işlemi yapılıyor:', accountId);
-      
+
       try {
         if (isCredit) {
           // VERESİYE SATIŞ
-          // Müşteriye borç oluştur (balance negatif olmalı)
           await accountTransactionService.create({
             account_id: accountId,
             transaction_type: 'sale',
@@ -144,7 +144,7 @@ try {
  */
 export async function checkStockAvailability(items: OrderItem[]) {
   console.log('🔍 Stok kontrolü başlıyor:', items.length, 'ürün');
-  
+
   try {
     const { recipeService } = await import('./supabase-services');
 
@@ -163,17 +163,17 @@ export async function checkStockAvailability(items: OrderItem[]) {
 
       try {
         console.log('🔍 Kontrol ediliyor:', item.productName);
-        
+
         // Önce reçete kontrol et
         const recipe = await recipeService.getByProductId(item.productId);
-        
+
         if (recipe && recipe.recipe_items && recipe.recipe_items.length > 0) {
           // Reçeteli ürün - hammadde kontrolü
           console.log('🧾 Reçete bulundu:', recipe.name, '- Hammaddeler kontrol ediliyor');
-          
+
           for (const recipeItem of recipe.recipe_items) {
             const requiredQuantity = recipeItem.quantity * item.quantity;
-            
+
             const { data: material } = await supabase
               .from('stocks')
               .select('*')
@@ -182,7 +182,7 @@ export async function checkStockAvailability(items: OrderItem[]) {
 
             if (material) {
               console.log('  📦 Hammadde:', material.name, 'Mevcut:', material.current_quantity, 'Gerekli:', requiredQuantity);
-              
+
               if (material.current_quantity < requiredQuantity) {
                 console.log('  ❌ Yetersiz!');
                 unavailableItems.push({
@@ -233,66 +233,7 @@ export async function checkStockAvailability(items: OrderItem[]) {
       available: unavailableItems.length === 0,
       unavailableItems,
     };
-    
-    console.log('✅ Stok kontrolü tamamlandı:', result.available ? 'YETERLİ' : 'YETERSİZ');
-    return result;
-  } catch (error) {
-    console.error('❌ Stok kontrolü genel hatası:', error);
-    return {
-      available: true,
-      unavailableItems: [],
-    };
-  }
-}
 
-        // Reçete kontrolü
-        const recipe = await recipeService.getByProductId(item.productId);
-        
-        if (recipe && recipe.recipe_items && recipe.recipe_items.length > 0) {
-          // Reçeteli ürün - hammadde kontrolü
-          console.log('🧾 Reçete bulundu, hammaddeler kontrol ediliyor');
-          
-          for (const recipeItem of recipe.recipe_items) {
-            const requiredQuantity = recipeItem.quantity * item.quantity;
-            
-            const { data: material } = await supabase
-              .from('stocks')
-              .select('*')
-              .eq('id', recipeItem.material_id)
-              .maybeSingle();
-
-            if (material && material.current_quantity < requiredQuantity) {
-              console.log('❌ Yetersiz hammadde:', material.name);
-              unavailableItems.push({
-                product_id: recipeItem.material_id,
-                product_name: `${material.name} (${item.productName} için gerekli)`,
-                requested: requiredQuantity,
-                available: material.current_quantity,
-              });
-            }
-          }
-        } else {
-          // Reçetesiz ürün - direkt stok kontrolü
-          if (stock.current_quantity < item.quantity) {
-            console.log('❌ Yetersiz stok:', stock.name);
-            unavailableItems.push({
-              product_id: item.productId,
-              product_name: stock.name,
-              requested: item.quantity,
-              available: stock.current_quantity,
-            });
-          }
-        }
-      } catch (itemError) {
-        console.error('❌ Ürün kontrolü hatası:', item.productName, itemError);
-      }
-    }
-
-    const result = {
-      available: unavailableItems.length === 0,
-      unavailableItems,
-    };
-    
     console.log('✅ Stok kontrolü tamamlandı:', result.available ? 'YETERLİ' : 'YETERSİZ');
     return result;
   } catch (error) {

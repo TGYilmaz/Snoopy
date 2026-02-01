@@ -226,7 +226,7 @@ export default function RecipesPage() {
   );
 }
 
-// Reçete Formu Bileşeni
+// Reçete Formu Bileşeni - GÜNCELLENEN
 function RecipeForm({
   recipe,
   stocks,
@@ -237,13 +237,19 @@ function RecipeForm({
   onClose: () => void;
 }) {
   const { addRecipe, updateRecipe } = useRecipeStore();
+  const [products, setProducts] = useState<any[]>([]);
 
-  const finishedProducts = stocks.filter(
-    (s) => s.category === 'finished_product' || s.category === 'semi_finished'
-  );
-  const rawMaterials = stocks.filter(
-    (s) => s.category === 'raw_material' || s.category === 'semi_finished'
-  );
+  // Products'ı yükle
+  useEffect(() => {
+    const loadProducts = async () => {
+      const { getProducts } = await import('@/lib/pos-store');
+      const allProducts = await getProducts();
+      setProducts(allProducts);
+    };
+    loadProducts();
+  }, []);
+
+  const rawMaterials = stocks; // Tüm stoklar hammadde olarak kullanılabilir
 
   const [formData, setFormData] = useState({
     product_id: recipe?.product_id || '',
@@ -297,6 +303,7 @@ function RecipeForm({
       onClose();
     } catch (error) {
       console.error('Hata:', error);
+      alert('Reçete kaydetme hatası');
     }
   };
 
@@ -314,13 +321,13 @@ function RecipeForm({
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Örn: Türk Kahvesi Reçetesi"
+              placeholder="Örn: Kaşarlı Tost Reçetesi"
               required
             />
           </div>
 
           <div className="col-span-2">
-            <label className="text-sm font-medium">Ürün Seçin</label>
+            <label className="text-sm font-medium">Ürün Seçin (Products'tan)</label>
             <Select
               value={formData.product_id}
               onValueChange={(value) =>
@@ -331,13 +338,22 @@ function RecipeForm({
                 <SelectValue placeholder="Ürün seçin" />
               </SelectTrigger>
               <SelectContent>
-                {finishedProducts.map((product) => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name}
-                  </SelectItem>
-                ))}
+                {products.length === 0 ? (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                    Henüz ürün eklenmemiş
+                  </div>
+                ) : (
+                  products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name} - ₺{product.price.toFixed(2)}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Ürünler → Menü Yönetimi'nden eklenebilir
+            </p>
           </div>
 
           <div>
@@ -381,7 +397,7 @@ function RecipeForm({
         {/* Hammaddeler */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Hammaddeler</label>
+            <label className="text-sm font-medium">Hammaddeler (Stocks'tan)</label>
             <Button type="button" variant="outline" size="sm" onClick={addItem}>
               <Plus className="h-4 w-4 mr-2" />
               Hammadde Ekle
@@ -407,14 +423,20 @@ function RecipeForm({
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Hammadde seçin" />
+                        <SelectValue placeholder="Hammadde seçin (Stocks)" />
                       </SelectTrigger>
                       <SelectContent>
-                        {rawMaterials.map((material) => (
-                          <SelectItem key={material.id} value={material.id}>
-                            {material.name}
-                          </SelectItem>
-                        ))}
+                        {rawMaterials.length === 0 ? (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                            Henüz stok eklenmemiş
+                          </div>
+                        ) : (
+                          rawMaterials.map((material) => (
+                            <SelectItem key={material.id} value={material.id}>
+                              {material.name} ({material.current_quantity} {STOCK_UNIT_LABELS[material.unit]})
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -470,7 +492,7 @@ function RecipeForm({
         <Button type="button" variant="outline" onClick={onClose}>
           İptal
         </Button>
-        <Button type="submit">{recipe ? 'Güncule' : 'Ekle'}</Button>
+        <Button type="submit">{recipe ? 'Güncelle' : 'Ekle'}</Button>
       </div>
     </form>
   );
